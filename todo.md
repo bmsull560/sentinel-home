@@ -52,3 +52,13 @@
 - [ ] Add onboarding flow for new users
 - [x] Create checkpoint for deployment
 - [ ] Deploy to production
+
+## UI Redesign (Reference: Aura Finance Dashboard)
+- [x] Update color palette to 3 colors max (soft purple/blue, light background, dark text)
+- [x] Implement soft gradient backgrounds
+- [x] Redesign metric cards with rounded corners and icon badges
+- [x] Update sidebar to minimal icon-based navigation
+- [x] Add subtle shadows and glass morphism effects
+- [x] Update typography to match reference (larger headings, lighter weights)
+- [x] Redesign charts with softer colors
+- [x] Update all pages (Overview, Alerts, Devices, Vulnerabilities) with new design

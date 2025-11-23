@@ -98,8 +98,8 @@ export default function Devices() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-semibold tracking-tight mb-2">Devices</h1>
-            <p className="text-muted-foreground">Manage and monitor your connected devices</p>
+            <h1 className="text-4xl font-medium tracking-tight mb-2">Devices</h1>
+            <p className="text-muted-foreground font-light">Manage and monitor your connected devices</p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -108,7 +108,7 @@ export default function Devices() {
                 Add Device
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="rounded-3xl">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
                   <DialogTitle>Add New Device</DialogTitle>
@@ -177,10 +177,10 @@ export default function Devices() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="rounded-xl">
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createDevice.isPending}>
+                  <Button type="submit" disabled={createDevice.isPending} className="rounded-xl">
                     {createDevice.isPending ? "Adding..." : "Add Device"}
                   </Button>
                 </DialogFooter>
@@ -190,38 +190,32 @@ export default function Devices() {
         </div>
 
         {devices && devices.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <Monitor className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No Devices Yet</h3>
-              <p className="text-muted-foreground text-center max-w-md mb-4">
+          <div className="metric-card text-center py-16">
+              <div className="icon-badge icon-badge-primary mx-auto mb-4">
+                <Monitor className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-medium mb-2">No Devices Yet</h3>
+              <p className="text-muted-foreground font-light text-center max-w-md mb-4">
                 Start by adding your first device to begin monitoring its security status.
               </p>
-              <Button onClick={() => setDialogOpen(true)}>
+              <Button onClick={() => setDialogOpen(true)} className="rounded-xl">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Your First Device
               </Button>
-            </CardContent>
-          </Card>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {devices?.map((device) => (
-              <Card key={device.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                        {getCategoryIcon(device.category)}
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">{device.name}</CardTitle>
-                        <CardDescription>{getCategoryLabel(device.category)}</CardDescription>
-                      </div>
-                    </div>
-                    {getStatusBadge(device.status)}
+              <div key={device.id} className="metric-card">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="icon-badge icon-badge-primary">
+                    {getCategoryIcon(device.category)}
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
+                  {getStatusBadge(device.status)}
+                </div>
+                <h3 className="font-medium text-lg mb-1">{device.name}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{getCategoryLabel(device.category)}</p>
+                <div className="space-y-1">
                   {device.manufacturer && (
                     <p className="text-sm">
                       <strong>Manufacturer:</strong> {device.manufacturer}
@@ -240,8 +234,8 @@ export default function Devices() {
                   <p className="text-xs text-muted-foreground pt-2">
                     Last checked: {new Date(device.lastChecked).toLocaleDateString()}
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}
