@@ -25,8 +25,8 @@ export default function Overview() {
   const deviceStatusData = useMemo(() => {
     if (!overview) return [];
     return [
-      { name: 'Secure', value: overview.secureDevices, color: 'oklch(0.65 0.15 160)' },
-      { name: 'At Risk', value: overview.atRiskDevices, color: 'oklch(0.65 0.20 25)' },
+      { name: 'Secure', value: overview.secureDevices, color: 'oklab(0.7 0.0260473 -0.147721)' },
+      { name: 'At Risk', value: overview.atRiskDevices, color: 'oklch(0 0 0)' },
     ];
   }, [overview]);
 
@@ -134,12 +134,12 @@ export default function Overview() {
               <AreaChart data={timeSeriesData}>
                 <defs>
                   <linearGradient id="colorSecure" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="oklch(0.65 0.15 160)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="oklch(0.65 0.15 160)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="oklab(0.7 0.0260473 -0.147721)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="oklab(0.7 0.0260473 -0.147721)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorAtRisk" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="oklch(0.65 0.20 25)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="oklch(0.65 0.20 25)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="oklch(0 0 0)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="oklch(0 0 0)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
@@ -156,7 +156,7 @@ export default function Overview() {
                 <Area
                   type="monotone"
                   dataKey="secure"
-                  stroke="oklch(0.65 0.15 160)"
+                  stroke="oklab(0.7 0.0260473 -0.147721)"
                   fillOpacity={1}
                   fill="url(#colorSecure)"
                   strokeWidth={2}
@@ -164,7 +164,7 @@ export default function Overview() {
                 <Area
                   type="monotone"
                   dataKey="atRisk"
-                  stroke="oklch(0.65 0.20 25)"
+                  stroke="oklch(0 0 0)"
                   fillOpacity={1}
                   fill="url(#colorAtRisk)"
                   strokeWidth={2}
@@ -206,11 +206,11 @@ export default function Overview() {
             </ResponsiveContainer>
             <div className="flex justify-center gap-6 mt-4">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ background: 'oklch(0.65 0.15 160)' }}></div>
+                <div className="w-3 h-3 rounded-full" style={{ background: 'oklab(0.7 0.0260473 -0.147721)' }}></div>
                 <span className="text-sm text-muted-foreground">Secure: {overview?.secureDevices || 0}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ background: 'oklch(0.65 0.20 25)' }}></div>
+                <div className="w-3 h-3 rounded-full" style={{ background: 'oklch(0 0 0)' }}></div>
                 <span className="text-sm text-muted-foreground">At Risk: {overview?.atRiskDevices || 0}</span>
               </div>
             </div>

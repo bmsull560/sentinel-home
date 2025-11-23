@@ -62,3 +62,9 @@
 - [x] Update typography to match reference (larger headings, lighter weights)
 - [x] Redesign charts with softer colors
 - [x] Update all pages (Overview, Alerts, Devices, Vulnerabilities) with new design
+
+## Strict 3-Color Palette Update
+- [x] Update color system to use only black, white, and oklab(0.7 0.0260473 -0.147721 / 0.2) with 20% opacity
+- [x] Remove all purple, green, red, yellow color variations
+- [x] Update all badges, icons, and UI elements to use only the 3 specified colors
+- [x] Ensure proper contrast and readability with limited palette
