@@ -1,160 +1,136 @@
-import DashboardLayout from "@/components/DashboardLayout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import AppShell, { useOrgId } from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { AlertTriangle, Bell, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+const SEVERITY_CONFIG: Record<string, { label: string; bg: string; text: string; icon: React.ElementType }> = {
+  critical: { label: "Critical", bg: "bg-black", text: "text-white", icon: AlertTriangle },
+  warning: { label: "Warning", bg: "bg-black/15", text: "text-black", icon: Clock },
+  info: { label: "Info", bg: "bg-black/5", text: "text-black/60", icon: Bell },
+};
+
+const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
+  unread: { label: "New", bg: "bg-black", text: "text-white" },
+  read: { label: "Read", bg: "bg-black/8", text: "text-black/60" },
+  acknowledged: { label: "Acknowledged", bg: "bg-black/8", text: "text-black/60" },
+  dismissed: { label: "Dismissed", bg: "bg-black/5", text: "text-black/30" },
+};
+
 export default function Alerts() {
-  const utils = trpc.useUtils();
-  const { data: alerts, isLoading } = trpc.alerts.list.useQuery();
+  const { isAuthenticated } = useAuth();
+  const orgId = useOrgId();
+
+  const { data: alerts, isLoading, refetch } = trpc.alerts.list.useQuery(
+    { orgId },
+    { enabled: isAuthenticated && !!orgId }
+  );
+
   const updateStatus = trpc.alerts.updateStatus.useMutation({
-    onSuccess: () => {
-      utils.alerts.list.invalidate();
-      utils.dashboard.overview.invalidate();
-      toast.success("Alert status updated");
-    },
+    onSuccess: () => { refetch(); toast.success("Alert updated."); },
   });
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "new":
-        return <AlertTriangle className="h-5 w-5 text-orange-500" />;
-      case "acknowledged":
-        return <Clock className="h-5 w-5 text-blue-500" />;
-      case "resolved":
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case "dismissed":
-        return <XCircle className="h-5 w-5 text-gray-500" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, string> = {
-      new: "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400",
-      acknowledged: "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400",
-      resolved: "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400",
-      dismissed: "bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400",
-    };
-    return variants[status] || variants.new;
-  };
-
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const unreadCount = alerts?.filter(a => a.status === "unread").length ?? 0;
 
   return (
-    <DashboardLayout>
-      <div className="space-y-8 pb-8">
-        <div>
-          <h1 className="text-4xl font-medium tracking-tight mb-2">Security Alerts</h1>
-          <p className="text-muted-foreground font-light">Monitor and respond to security notifications</p>
+    <AppShell>
+      <div className="space-y-6 animate-fade-up">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Alerts</h1>
+            <p className="text-sm text-black/40 mt-1">
+              {alerts?.length ?? 0} total · {unreadCount} unread
+            </p>
+          </div>
+          {unreadCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-black/15 text-xs h-8"
+              onClick={() => {
+                alerts?.filter(a => a.status === "unread").forEach(a =>
+                  updateStatus.mutate({ id: a.id, status: "read" })
+                );
+              }}>
+              Mark all read
+            </Button>
+          )}
         </div>
 
-        {alerts && alerts.length > 0 ? (
-          <div className="space-y-4">
-            {alerts.map((alert) => (
-              <div key={alert.id} className="metric-card">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="mt-1">{getStatusIcon(alert.status)}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-medium text-lg">Alert #{alert.id}</h3>
-                        <Badge className={`${getStatusBadge(alert.status)} border-0`}>
-                          {alert.status}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Vulnerability ID: {alert.vulnerabilityId}
-                      </p>
-                      {alert.deviceId && (
-                        <p className="text-sm text-muted-foreground mb-1">
-                          Device ID: {alert.deviceId}
-                        </p>
-                      )}
-                      {alert.actionTaken && (
-                        <p className="text-sm text-muted-foreground mb-1">
-                          Action: {alert.actionTaken}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-3">
-                        Created: {new Date(alert.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    {alert.status === "new" && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="rounded-xl"
-                          onClick={() =>
-                            updateStatus.mutate({
-                              id: alert.id,
-                              status: "acknowledged",
-                            })
-                          }
-                          disabled={updateStatus.isPending}
-                        >
-                          Acknowledge
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="rounded-xl"
-                          onClick={() =>
-                            updateStatus.mutate({
-                              id: alert.id,
-                              status: "resolved",
-                              actionTaken: "Manually resolved",
-                            })
-                          }
-                          disabled={updateStatus.isPending}
-                        >
-                          Resolve
-                        </Button>
-                      </>
-                    )}
-                    {alert.status === "acknowledged" && (
-                      <Button
-                        size="sm"
-                        className="rounded-xl"
-                        onClick={() =>
-                          updateStatus.mutate({
-                            id: alert.id,
-                            status: "resolved",
-                            actionTaken: "Manually resolved",
-                          })
-                        }
-                        disabled={updateStatus.isPending}
-                      >
-                        Resolve
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+        {/* List */}
+        {isLoading ? (
+          <div className="space-y-3">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-black/5 rounded-2xl animate-pulse" />)}
+          </div>
+        ) : !alerts?.length ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <CheckCircle2 className="w-12 h-12 text-black/15 mb-4" />
+            <h3 className="font-semibold text-base mb-2">All clear</h3>
+            <p className="text-sm text-black/40">No active security alerts at this time.</p>
           </div>
         ) : (
-          <div className="metric-card text-center py-16">
-            <div className="icon-badge icon-badge-success mx-auto mb-4">
-              <CheckCircle2 className="h-6 w-6 text-white" />
-            </div>
-            <h3 className="text-xl font-medium mb-2">All Clear!</h3>
-            <p className="text-muted-foreground font-light">No active security alerts at this time.</p>
+          <div className="space-y-3">
+            {alerts.map(alert => {
+              const sevCfg = SEVERITY_CONFIG[alert.severity] ?? SEVERITY_CONFIG.info;
+              const stCfg = STATUS_CONFIG[alert.status] ?? STATUS_CONFIG.read;
+              const Icon = sevCfg.icon;
+              return (
+                <div key={alert.id}
+                  className={`rounded-2xl border bg-white p-5 transition-all ${
+                    alert.status === "unread" ? "border-black/20" : "border-black/8"
+                  }`}>
+                  <div className="flex items-start gap-4">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${sevCfg.bg}`}>
+                      <Icon className={`w-4 h-4 ${sevCfg.text}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <h3 className="font-semibold text-sm">{alert.title}</h3>
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${stCfg.bg} ${stCfg.text}`}>
+                          {stCfg.label}
+                        </span>
+                      </div>
+                      {alert.message && (
+                        <p className="text-xs text-black/50 leading-relaxed mb-3">{alert.message}</p>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-black/30">
+                          {new Date(alert.createdAt).toLocaleString()}
+                        </span>
+                        <div className="flex gap-2">
+                          {alert.status === "unread" && (
+                            <Button size="sm" variant="outline"
+                              onClick={() => updateStatus.mutate({ id: alert.id, status: "acknowledged" })}
+                              disabled={updateStatus.isPending}
+                              className="rounded-xl border-black/15 text-xs h-7 px-3">
+                              Acknowledge
+                            </Button>
+                          )}
+                          {(alert.status === "unread" || alert.status === "acknowledged") && (
+                            <Button size="sm"
+                              onClick={() => updateStatus.mutate({ id: alert.id, status: "dismissed" })}
+                              disabled={updateStatus.isPending}
+                              className="rounded-xl bg-black text-white hover:bg-black/80 text-xs h-7 px-3">
+                              Dismiss
+                            </Button>
+                          )}
+                          {alert.status === "dismissed" && (
+                            <span className="text-xs text-black/30 flex items-center gap-1">
+                              <XCircle className="w-3 h-3" /> Dismissed
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </AppShell>
   );
 }

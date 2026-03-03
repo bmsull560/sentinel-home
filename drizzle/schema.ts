@@ -1,8 +1,15 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
+import {
+  boolean,
+  int,
+  mysqlEnum,
+  mysqlTable,
+  text,
+  timestamp,
+  varchar,
+  json,
+} from "drizzle-orm/mysql-core";
 
-/**
- * Core user table backing auth flow.
- */
+// ─── Users ────────────────────────────────────────────────────────────────────
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
@@ -10,111 +17,150 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  avatarUrl: text("avatarUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
-
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-/**
- * Device categories for connected devices
- */
-export const devices = mysqlTable("devices", {
+// ─── Organizations (Tenants) ──────────────────────────────────────────────────
+export const organizations = mysqlTable("organizations", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  category: mysqlEnum("category", [
-    "smart_home",
-    "iot",
-    "mobile",
-    "laptop",
-    "router",
-    "automotive",
-    "health",
-    "child_pet"
-  ]).notNull(),
-  manufacturer: varchar("manufacturer", { length: 255 }),
-  model: varchar("model", { length: 255 }),
-  firmwareVersion: varchar("firmwareVersion", { length: 100 }),
-  status: mysqlEnum("status", ["secure", "at_risk", "unknown"]).default("unknown").notNull(),
-  lastChecked: timestamp("lastChecked").defaultNow().notNull(),
+  slug: varchar("slug", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 200 }).notNull(),
+  logoUrl: text("logoUrl"),
+  plan: mysqlEnum("plan", ["free", "starter", "pro", "enterprise"]).default("free").notNull(),
+  planSeats: int("planSeats").default(3).notNull(),
+  planDevices: int("planDevices").default(10).notNull(),
+  billingEmail: varchar("billingEmail", { length: 320 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = typeof organizations.$inferInsert;
 
+// ─── Organization Members ─────────────────────────────────────────────────────
+export const orgMembers = mysqlTable("org_members", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("role", ["owner", "admin", "viewer"]).default("viewer").notNull(),
+  invitedBy: int("invitedBy"),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+});
+export type OrgMember = typeof orgMembers.$inferSelect;
+
+// ─── Org Invitations ──────────────────────────────────────────────────────────
+export const orgInvitations = mysqlTable("org_invitations", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  role: mysqlEnum("role", ["admin", "viewer"]).default("viewer").notNull(),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  invitedBy: int("invitedBy").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  acceptedAt: timestamp("acceptedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── API Keys ─────────────────────────────────────────────────────────────────
+export const apiKeys = mysqlTable("api_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  keyHash: varchar("keyHash", { length: 128 }).notNull().unique(),
+  keyPrefix: varchar("keyPrefix", { length: 12 }).notNull(),
+  lastUsedAt: timestamp("lastUsedAt"),
+  expiresAt: timestamp("expiresAt"),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  revokedAt: timestamp("revokedAt"),
+});
+
+// ─── Devices ──────────────────────────────────────────────────────────────────
+export const devices = mysqlTable("devices", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  category: mysqlEnum("category", [
+    "smart_home", "iot", "mobile", "laptop",
+    "router", "automotive", "health", "child_pet", "other",
+  ]).default("other").notNull(),
+  manufacturer: varchar("manufacturer", { length: 100 }),
+  model: varchar("model", { length: 200 }),
+  firmwareVersion: varchar("firmwareVersion", { length: 50 }),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  macAddress: varchar("macAddress", { length: 17 }),
+  status: mysqlEnum("status", ["secure", "at_risk", "critical", "unknown"]).default("unknown").notNull(),
+  lastSeenAt: timestamp("lastSeenAt"),
+  matchedCpeVendor: varchar("matchedCpeVendor", { length: 100 }),
+  matchedCpeProduct: varchar("matchedCpeProduct", { length: 200 }),
+  matchConfidence: int("matchConfidence"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
 export type Device = typeof devices.$inferSelect;
 export type InsertDevice = typeof devices.$inferInsert;
 
-/**
- * Vulnerabilities and CVE tracking
- */
+// ─── Vulnerabilities ──────────────────────────────────────────────────────────
 export const vulnerabilities = mysqlTable("vulnerabilities", {
   id: int("id").autoincrement().primaryKey(),
-  cveId: varchar("cveId", { length: 50 }),
-  title: varchar("title", { length: 500 }).notNull(),
-  description: text("description").notNull(),
-  severity: mysqlEnum("severity", ["calm", "be_aware", "action_recommended", "immediate_attention"]).notNull(),
-  affectedDevices: text("affectedDevices"), // JSON array of device categories or models
-  manufacturer: varchar("manufacturer", { length: 255 }),
-  discoveredAt: timestamp("discoveredAt").notNull(),
-  patchAvailable: boolean("patchAvailable").default(false).notNull(),
-  patchDetails: text("patchDetails"),
+  orgId: int("orgId").notNull(),
+  deviceId: int("deviceId"),
+  cveId: varchar("cveId", { length: 30 }),
+  title: varchar("title", { length: 300 }).notNull(),
+  description: text("description"),
+  plainDescription: text("plainDescription"),
+  severity: mysqlEnum("severity", ["calm", "be_aware", "action_recommended", "immediate_attention"]).default("calm").notNull(),
+  cvssScore: varchar("cvssScore", { length: 5 }),
+  attackVector: varchar("attackVector", { length: 50 }),
+  affectedFirmware: varchar("affectedFirmware", { length: 100 }),
+  patchAvailable: boolean("patchAvailable").default(false),
+  patchVersion: varchar("patchVersion", { length: 50 }),
+  isKev: boolean("isKev").default(false),
+  exploitAvailable: boolean("exploitAvailable").default(false),
+  status: mysqlEnum("status", ["open", "acknowledged", "resolved", "wont_fix"]).default("open").notNull(),
+  aiExplanation: text("aiExplanation"),
+  actionSteps: json("actionSteps"),
+  publishedAt: timestamp("publishedAt"),
+  resolvedAt: timestamp("resolvedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
-
 export type Vulnerability = typeof vulnerabilities.$inferSelect;
 export type InsertVulnerability = typeof vulnerabilities.$inferInsert;
 
-/**
- * Alerts for users about specific vulnerabilities affecting their devices
- */
+// ─── Alerts ───────────────────────────────────────────────────────────────────
 export const alerts = mysqlTable("alerts", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+  orgId: int("orgId").notNull(),
   deviceId: int("deviceId"),
-  vulnerabilityId: int("vulnerabilityId").notNull(),
-  status: mysqlEnum("status", ["new", "acknowledged", "resolved", "dismissed"]).default("new").notNull(),
-  actionTaken: text("actionTaken"),
+  vulnerabilityId: int("vulnerabilityId"),
+  title: varchar("title", { length: 300 }).notNull(),
+  message: text("message"),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(),
+  status: mysqlEnum("status", ["unread", "read", "acknowledged", "dismissed"]).default("unread").notNull(),
+  acknowledgedBy: int("acknowledgedBy"),
+  acknowledgedAt: timestamp("acknowledgedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
-
 export type Alert = typeof alerts.$inferSelect;
-export type InsertAlert = typeof alerts.$inferInsert;
 
-/**
- * Notifications for gentle nudges and updates
- */
-export const notifications = mysqlTable("notifications", {
+// ─── Agent Runs ───────────────────────────────────────────────────────────────
+export const agentRuns = mysqlTable("agent_runs", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
-  message: text("message").notNull(),
-  type: mysqlEnum("type", ["info", "warning", "action_required", "resolved"]).notNull(),
-  read: boolean("read").default(false).notNull(),
-  relatedAlertId: int("relatedAlertId"),
+  orgId: int("orgId").notNull(),
+  triggeredBy: int("triggeredBy"),
+  intent: text("intent").notNull(),
+  status: mysqlEnum("status", ["queued", "running", "completed", "failed"]).default("queued").notNull(),
+  agentTrace: json("agentTrace"),
+  result: text("result"),
+  tokensUsed: int("tokensUsed"),
+  durationMs: int("durationMs"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
 });
-
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = typeof notifications.$inferInsert;
-
-/**
- * Action plans for remediation steps
- */
-export const actionPlans = mysqlTable("actionPlans", {
-  id: int("id").autoincrement().primaryKey(),
-  vulnerabilityId: int("vulnerabilityId").notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
-  steps: text("steps").notNull(), // JSON array of step objects
-  difficulty: mysqlEnum("difficulty", ["easy", "moderate", "advanced"]).notNull(),
-  estimatedTime: varchar("estimatedTime", { length: 50 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-
-export type ActionPlan = typeof actionPlans.$inferSelect;
-export type InsertActionPlan = typeof actionPlans.$inferInsert;
+export type AgentRun = typeof agentRuns.$inferSelect;

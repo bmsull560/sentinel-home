@@ -1,14 +1,16 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { 
-  InsertUser, users, 
+import {
+  InsertUser, users,
+  organizations, Organization, InsertOrganization,
+  orgMembers, OrgMember,
   devices, Device, InsertDevice,
   vulnerabilities, Vulnerability, InsertVulnerability,
-  alerts, Alert, InsertAlert,
-  notifications, Notification, InsertNotification,
-  actionPlans, ActionPlan, InsertActionPlan
+  alerts, Alert,
+  agentRuns, AgentRun,
+  apiKeys,
 } from "../drizzle/schema";
-import { ENV } from './_core/env';
+import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -24,26 +26,17 @@ export async function getDb() {
   return _db;
 }
 
+// ─── Users ────────────────────────────────────────────────────────────────────
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
-  }
-
+  if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
-  }
+  if (!db) { console.warn("[Database] Cannot upsert user: database not available"); return; }
 
   try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
+    const values: InsertUser = { openId: user.openId };
     const updateSet: Record<string, unknown> = {};
-
     const textFields = ["name", "email", "loginMethod"] as const;
     type TextField = (typeof textFields)[number];
-
     const assignNullable = (field: TextField) => {
       const value = user[field];
       if (value === undefined) return;
@@ -51,32 +44,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values[field] = normalized;
       updateSet[field] = normalized;
     };
-
     textFields.forEach(assignNullable);
-
-    if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
-      updateSet.lastSignedIn = user.lastSignedIn;
-    }
-    if (user.role !== undefined) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
-    }
-
-    if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
-    }
-
-    if (Object.keys(updateSet).length === 0) {
-      updateSet.lastSignedIn = new Date();
-    }
-
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
+    if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
+    if (user.role !== undefined) { values.role = user.role; updateSet.role = user.role; }
+    else if (user.openId === ENV.ownerOpenId) { values.role = "admin"; updateSet.role = "admin"; }
+    if (!values.lastSignedIn) values.lastSignedIn = new Date();
+    if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
+    await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;
@@ -85,20 +59,94 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
-
+  if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result[0];
 }
 
-// Device queries
-export async function getUserDevices(userId: number): Promise<Device[]> {
+// ─── Organizations ────────────────────────────────────────────────────────────
+export async function createOrg(org: InsertOrganization): Promise<Organization> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(organizations).values(org);
+  return { ...org, id: Number(result[0].insertId) } as Organization;
+}
+
+export async function getOrgById(orgId: number): Promise<Organization | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(organizations).where(eq(organizations.id, orgId)).limit(1);
+  return result[0];
+}
+
+export async function getOrgBySlug(slug: string): Promise<Organization | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(organizations).where(eq(organizations.slug, slug)).limit(1);
+  return result[0];
+}
+
+export async function updateOrg(orgId: number, updates: Partial<InsertOrganization>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(organizations).set(updates).where(eq(organizations.id, orgId));
+}
+
+export async function getUserOrgs(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(devices).where(eq(devices.userId, userId));
+  const members = await db.select().from(orgMembers).where(eq(orgMembers.userId, userId));
+  if (!members.length) return [];
+  const orgIds = members.map(m => m.orgId);
+  const orgs = await Promise.all(orgIds.map(id => getOrgById(id)));
+  return orgs.filter(Boolean) as Organization[];
+}
+
+// ─── Org Members ──────────────────────────────────────────────────────────────
+export async function addOrgMember(orgId: number, userId: number, role: OrgMember["role"] = "viewer"): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(orgMembers).values({ orgId, userId, role });
+}
+
+export async function getOrgMembers(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const members = await db.select().from(orgMembers).where(eq(orgMembers.orgId, orgId));
+  const withUsers = await Promise.all(
+    members.map(async m => {
+      const user = await db.select().from(users).where(eq(users.id, m.userId)).limit(1);
+      return { ...m, user: user[0] };
+    })
+  );
+  return withUsers;
+}
+
+export async function getUserOrgRole(orgId: number, userId: number): Promise<OrgMember["role"] | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(orgMembers)
+    .where(and(eq(orgMembers.orgId, orgId), eq(orgMembers.userId, userId))).limit(1);
+  return result[0]?.role ?? null;
+}
+
+export async function removeOrgMember(orgId: number, userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(orgMembers).where(and(eq(orgMembers.orgId, orgId), eq(orgMembers.userId, userId)));
+}
+
+export async function updateOrgMemberRole(orgId: number, userId: number, role: OrgMember["role"]): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(orgMembers).set({ role }).where(and(eq(orgMembers.orgId, orgId), eq(orgMembers.userId, userId)));
+}
+
+// ─── Devices ──────────────────────────────────────────────────────────────────
+export async function getOrgDevices(orgId: number): Promise<Device[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(devices).where(eq(devices.orgId, orgId)).orderBy(desc(devices.createdAt));
 }
 
 export async function getDeviceById(deviceId: number): Promise<Device | undefined> {
@@ -127,11 +175,11 @@ export async function deleteDevice(deviceId: number): Promise<void> {
   await db.delete(devices).where(eq(devices.id, deviceId));
 }
 
-// Vulnerability queries
-export async function getAllVulnerabilities(): Promise<Vulnerability[]> {
+// ─── Vulnerabilities ──────────────────────────────────────────────────────────
+export async function getOrgVulnerabilities(orgId: number): Promise<Vulnerability[]> {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(vulnerabilities).orderBy(desc(vulnerabilities.discoveredAt));
+  return db.select().from(vulnerabilities).where(eq(vulnerabilities.orgId, orgId)).orderBy(desc(vulnerabilities.createdAt));
 }
 
 export async function getVulnerabilityById(vulnId: number): Promise<Vulnerability | undefined> {
@@ -148,65 +196,61 @@ export async function createVulnerability(vuln: InsertVulnerability): Promise<Vu
   return { ...vuln, id: Number(result[0].insertId) } as Vulnerability;
 }
 
-// Alert queries
-export async function getUserAlerts(userId: number): Promise<Alert[]> {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(alerts).where(eq(alerts.userId, userId)).orderBy(desc(alerts.createdAt));
-}
-
-export async function getUrgentAlerts(userId: number): Promise<number> {
-  const db = await getDb();
-  if (!db) return 0;
-  const result = await db.select().from(alerts).where(
-    and(eq(alerts.userId, userId), eq(alerts.status, "new"))
-  );
-  return result.length;
-}
-
-export async function createAlert(alert: InsertAlert): Promise<Alert> {
+export async function updateVulnerability(vulnId: number, updates: Partial<InsertVulnerability>): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(alerts).values(alert);
-  return { ...alert, id: Number(result[0].insertId) } as Alert;
+  await db.update(vulnerabilities).set(updates).where(eq(vulnerabilities.id, vulnId));
 }
 
-export async function updateAlert(alertId: number, updates: Partial<InsertAlert>): Promise<void> {
+// ─── Alerts ───────────────────────────────────────────────────────────────────
+export async function getOrgAlerts(orgId: number): Promise<Alert[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(alerts).where(eq(alerts.orgId, orgId)).orderBy(desc(alerts.createdAt));
+}
+
+export async function updateAlert(alertId: number, updates: Partial<typeof alerts.$inferInsert>): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(alerts).set(updates).where(eq(alerts.id, alertId));
 }
 
-// Notification queries
-export async function getUserNotifications(userId: number): Promise<Notification[]> {
+// ─── Agent Runs ───────────────────────────────────────────────────────────────
+export async function getOrgAgentRuns(orgId: number): Promise<AgentRun[]> {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+  return db.select().from(agentRuns).where(eq(agentRuns.orgId, orgId)).orderBy(desc(agentRuns.createdAt));
 }
 
-export async function createNotification(notification: InsertNotification): Promise<Notification> {
+export async function createAgentRun(run: typeof agentRuns.$inferInsert): Promise<AgentRun> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(notifications).values(notification);
-  return { ...notification, id: Number(result[0].insertId) } as Notification;
+  const result = await db.insert(agentRuns).values(run);
+  return { ...run, id: Number(result[0].insertId) } as AgentRun;
 }
 
-export async function markNotificationRead(notificationId: number): Promise<void> {
+export async function updateAgentRun(runId: number, updates: Partial<typeof agentRuns.$inferInsert>): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(notifications).set({ read: true }).where(eq(notifications.id, notificationId));
+  await db.update(agentRuns).set(updates).where(eq(agentRuns.id, runId));
 }
 
-// Action Plan queries
-export async function getActionPlansByVulnerability(vulnId: number): Promise<ActionPlan[]> {
+// ─── API Keys ─────────────────────────────────────────────────────────────────
+export async function getOrgApiKeys(orgId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(actionPlans).where(eq(actionPlans.vulnerabilityId, vulnId));
+  return db.select().from(apiKeys).where(and(eq(apiKeys.orgId, orgId))).orderBy(desc(apiKeys.createdAt));
 }
 
-export async function createActionPlan(plan: InsertActionPlan): Promise<ActionPlan> {
+export async function createApiKey(key: typeof apiKeys.$inferInsert) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(actionPlans).values(plan);
-  return { ...plan, id: Number(result[0].insertId) } as ActionPlan;
+  const result = await db.insert(apiKeys).values(key);
+  return { ...key, id: Number(result[0].insertId) };
+}
+
+export async function revokeApiKey(keyId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(apiKeys).set({ revokedAt: new Date() }).where(eq(apiKeys.id, keyId));
 }

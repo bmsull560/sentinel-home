@@ -68,3 +68,25 @@
 - [x] Remove all purple, green, red, yellow color variations
 - [x] Update all badges, icons, and UI elements to use only the 3 specified colors
 - [x] Ensure proper contrast and readability with limited palette
+
+## Enterprise SaaS UI Build
+- [x] Multi-tenant schema: orgs, members, roles, plans, api_keys
+- [x] Extend devices/vulnerabilities/alerts with org_id tenancy
+- [x] Push schema migrations
+- [x] Marketing landing page (hero, features, pricing, CTA)
+- [x] Onboarding wizard (org name, first device, plan)
+- [x] DashboardLayout with full sidebar (Overview, Devices, Vulns, Alerts, Agent Console, Team, Billing, Settings)
+- [x] Org switcher + user avatar in sidebar
+- [ ] Global command palette (Cmd+K) — placeholder toast
+- [x] Overview dashboard with metric cards, threat chart, device donut
+- [x] Devices page with table, filters, add modal, detail drawer
+- [x] Vulnerabilities page with AI explain modal
+- [x] Alerts page with timeline, acknowledge, dismiss
+- [x] Agent Console page (live agent loop, run history, prompt editor)
+- [x] Team page (invite, roles, remove)
+- [x] Billing page (plan cards, usage meter, upgrade CTA)
+- [x] Settings page (org profile, API keys, notifications, privacy)
+- [x] tRPC routers: org, members, devices, vulnerabilities, alerts, billing, agentRun
+- [x] Vitest tests for all new routers (25 tests passing)
+- [x] Empty states and loading skeletons for all pages
+- [x] Final checkpoint and delivery
