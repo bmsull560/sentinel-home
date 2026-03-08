@@ -13,6 +13,7 @@ import {
   getOrgCveMatches,
 } from "./intelligence/ingestionPipeline";
 import { fetchNvdCveById } from "./intelligence/nvdClient";
+import { getSchedulerState } from "./intelligence/scheduler";
 import { nvdCveCache, kevCatalog, deviceCveMatches, ingestionRuns } from "../drizzle/schema";
 import { eq, desc, sql, and, like } from "drizzle-orm";
 
@@ -489,6 +490,31 @@ Respond in a calm, empowering, non-alarming tone. Structure your response as:
         }
         // Fall back to live NVD API
         return fetchNvdCveById(input.cveId);
+      }),
+
+    // Get live scheduler state (next run, last run, run counts)
+    schedulerStatus: protectedProcedure
+      .query(() => {
+        const s = getSchedulerState();
+        return {
+          isRunning: s.isRunning,
+          lastRunAt: s.lastRunAt,
+          lastRunError: s.lastRunError,
+          nextRunAt: s.nextRunAt,
+          totalRuns: s.totalRuns,
+          totalErrors: s.totalErrors,
+          startedAt: s.startedAt,
+          lastResult: s.lastRunResult
+            ? {
+                cvesFetched: s.lastRunResult.cvesFetched,
+                cvesInserted: s.lastRunResult.cvesInserted,
+                cvesUpdated: s.lastRunResult.cvesUpdated,
+                matchesCreated: s.lastRunResult.matchesCreated,
+                alertsGenerated: s.lastRunResult.alertsGenerated,
+                durationMs: s.lastRunResult.durationMs,
+              }
+            : null,
+        };
       }),
   }),
 

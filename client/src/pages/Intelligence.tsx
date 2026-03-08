@@ -55,6 +55,11 @@ export default function Intelligence() {
   const [activeSearch, setActiveSearch] = useState("");
   const [daysBack, setDaysBack] = useState(7);
 
+  const { data: schedulerStatus } = trpc.intelligence.schedulerStatus.useQuery(
+    undefined,
+    { refetchInterval: 30_000 } // poll every 30s to keep next-run countdown fresh
+  );
+
   const { data: runs, refetch: refetchRuns, isLoading: runsLoading } =
     trpc.intelligence.runs.useQuery({ limit: 20 });
 
@@ -184,6 +189,77 @@ export default function Intelligence() {
               <div className="text-xs text-black/40 mt-1">{stat.sub}</div>
             </div>
           ))}
+        </div>
+
+        {/* Scheduler Status Panel */}
+        <div className="bg-white rounded-2xl border border-black/6 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-black/40" />
+              <span className="text-sm font-semibold text-black">Automated Ingestion Schedule</span>
+              <span className="text-xs text-black/40">— every 6 hours (UTC)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {schedulerStatus?.isRunning ? (
+                <span className="flex items-center gap-1.5 text-xs font-medium text-black bg-black/8 rounded-full px-3 py-1">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Running now
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-xs font-medium text-black/50 bg-black/4 rounded-full px-3 py-1">
+                  <CheckCircle className="w-3 h-3" /> Idle
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">Next Run</div>
+              <div className="text-sm font-semibold text-black">
+                {schedulerStatus?.nextRunAt
+                  ? new Date(schedulerStatus.nextRunAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })
+                  : <span className="text-black/30">—</span>}
+              </div>
+              {schedulerStatus?.nextRunAt && (
+                <div className="text-xs text-black/40">
+                  {new Date(schedulerStatus.nextRunAt).toLocaleDateString()}
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">Last Run</div>
+              <div className="text-sm font-semibold text-black">
+                {schedulerStatus?.lastRunAt
+                  ? new Date(schedulerStatus.lastRunAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : <span className="text-black/30">Never</span>}
+              </div>
+              {schedulerStatus?.lastRunError && (
+                <div className="text-xs text-red-500 truncate max-w-[120px]" title={schedulerStatus.lastRunError}>
+                  {schedulerStatus.lastRunError}
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">Total Runs</div>
+              <div className="text-sm font-semibold text-black tabular-nums">
+                {schedulerStatus?.totalRuns ?? 0}
+                {(schedulerStatus?.totalErrors ?? 0) > 0 && (
+                  <span className="text-xs text-black/40 ml-1">({schedulerStatus?.totalErrors} errors)</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">Last Result</div>
+              {schedulerStatus?.lastResult ? (
+                <div className="text-xs text-black/60 space-y-0.5">
+                  <div>{schedulerStatus.lastResult.cvesFetched} CVEs fetched</div>
+                  <div>{schedulerStatus.lastResult.matchesCreated} matches created</div>
+                  <div>{schedulerStatus.lastResult.alertsGenerated} alerts generated</div>
+                </div>
+              ) : (
+                <div className="text-sm text-black/30">—</div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Last ingestion info */}

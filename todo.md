@@ -106,3 +106,14 @@
 - [x] OAuth avatarUrl column fix applied (SQL ALTER + db:push)
 - [x] 25 vitest tests passing
 - [x] Final checkpoint and delivery
+
+## Sprint 3: Automated Ingestion Cron Job (COMPLETED)
+- [x] Read server entry point to find where to register cron
+- [x] Install node-cron package
+- [x] Create server/intelligence/scheduler.ts with 6-hour cron job
+- [x] Wire scheduler startup into server boot sequence
+- [x] Add intelligence.schedulerStatus tRPC procedure
+- [x] Update Intelligence UI to show next scheduled run time, last result, run counts
+- [x] Write 15 vitest tests for scheduler logic (mutex, start/stop, state, error handling)
+- [x] 40 total tests passing across 3 test files
+- [x] Checkpoint and deliver
