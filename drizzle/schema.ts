@@ -164,3 +164,111 @@ export const agentRuns = mysqlTable("agent_runs", {
   completedAt: timestamp("completedAt"),
 });
 export type AgentRun = typeof agentRuns.$inferSelect;
+
+// ─── NVD Raw CVE Cache ────────────────────────────────────────────────────────
+// Stores the raw normalized data from NVD API v2 for every CVE we've ingested.
+// This is the source of truth before matching to org devices.
+export const nvdCveCache = mysqlTable("nvd_cve_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  cveId: varchar("cveId", { length: 30 }).notNull().unique(),
+  // CVSS v3 metrics
+  cvssV3Score: varchar("cvssV3Score", { length: 5 }),
+  cvssV3Vector: varchar("cvssV3Vector", { length: 100 }),
+  cvssV3Severity: varchar("cvssV3Severity", { length: 20 }),
+  attackVector: varchar("attackVector", { length: 20 }),
+  attackComplexity: varchar("attackComplexity", { length: 20 }),
+  privilegesRequired: varchar("privilegesRequired", { length: 20 }),
+  userInteraction: varchar("userInteraction", { length: 20 }),
+  confidentialityImpact: varchar("confidentialityImpact", { length: 20 }),
+  integrityImpact: varchar("integrityImpact", { length: 20 }),
+  availabilityImpact: varchar("availabilityImpact", { length: 20 }),
+  // Description and metadata
+  description: text("description"),
+  // CPE matches (raw JSON from NVD)
+  cpeMatches: json("cpeMatches"),
+  // Affected vendor/product extracted for fast lookup
+  affectedVendors: json("affectedVendors"),
+  // CISA KEV enrichment
+  isKev: boolean("isKev").default(false).notNull(),
+  kevDateAdded: varchar("kevDateAdded", { length: 20 }),
+  kevDueDate: varchar("kevDueDate", { length: 20 }),
+  kevKnownRansomwareUse: varchar("kevKnownRansomwareUse", { length: 10 }),
+  kevRequiredAction: text("kevRequiredAction"),
+  // Exploit intelligence
+  exploitAvailable: boolean("exploitAvailable").default(false).notNull(),
+  patchAvailable: boolean("patchAvailable").default(false).notNull(),
+  // Timestamps
+  nvdPublishedAt: timestamp("nvdPublishedAt"),
+  nvdLastModifiedAt: timestamp("nvdLastModifiedAt"),
+  ingestedAt: timestamp("ingestedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type NvdCveCache = typeof nvdCveCache.$inferSelect;
+export type InsertNvdCveCache = typeof nvdCveCache.$inferInsert;
+
+// ─── CISA KEV Catalog ─────────────────────────────────────────────────────────
+// Full CISA Known Exploited Vulnerabilities catalog snapshot.
+export const kevCatalog = mysqlTable("kev_catalog", {
+  id: int("id").autoincrement().primaryKey(),
+  cveId: varchar("cveId", { length: 30 }).notNull().unique(),
+  vendorProject: varchar("vendorProject", { length: 200 }),
+  product: varchar("product", { length: 200 }),
+  vulnerabilityName: varchar("vulnerabilityName", { length: 300 }),
+  dateAdded: varchar("dateAdded", { length: 20 }),
+  shortDescription: text("shortDescription"),
+  requiredAction: text("requiredAction"),
+  dueDate: varchar("dueDate", { length: 20 }),
+  knownRansomwareCampaignUse: varchar("knownRansomwareCampaignUse", { length: 10 }),
+  notes: text("notes"),
+  ingestedAt: timestamp("ingestedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type KevCatalog = typeof kevCatalog.$inferSelect;
+export type InsertKevCatalog = typeof kevCatalog.$inferInsert;
+
+// ─── Device CVE Matches ───────────────────────────────────────────────────────
+// Junction table: which CVEs match which devices, with confidence scores.
+export const deviceCveMatches = mysqlTable("device_cve_matches", {
+  id: int("id").autoincrement().primaryKey(),
+  deviceId: int("deviceId").notNull(),
+  orgId: int("orgId").notNull(),
+  cveId: varchar("cveId", { length: 30 }).notNull(),
+  // Match strategy used
+  matchStrategy: mysqlEnum("matchStrategy", ["exact_cpe", "fuzzy_cpe", "fingerprint", "vendor_product"]).notNull(),
+  // Confidence 0-100
+  confidenceScore: int("confidenceScore").notNull(),
+  // Sentinel composite risk score 0-100
+  sentinelRiskScore: int("sentinelRiskScore").notNull(),
+  // Denormalized for fast queries
+  cvssScore: varchar("cvssScore", { length: 5 }),
+  isKev: boolean("isKev").default(false).notNull(),
+  exploitAvailable: boolean("exploitAvailable").default(false).notNull(),
+  patchAvailable: boolean("patchAvailable").default(false).notNull(),
+  // Alert generated?
+  alertGenerated: boolean("alertGenerated").default(false).notNull(),
+  alertId: int("alertId"),
+  // Vuln record created in org's vulnerabilities table?
+  vulnerabilityId: int("vulnerabilityId"),
+  matchedAt: timestamp("matchedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DeviceCveMatch = typeof deviceCveMatches.$inferSelect;
+export type InsertDeviceCveMatch = typeof deviceCveMatches.$inferInsert;
+
+// ─── Ingestion Run Log ────────────────────────────────────────────────────────
+// Tracks every ingestion run for observability and debugging.
+export const ingestionRuns = mysqlTable("ingestion_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  source: mysqlEnum("source", ["nvd", "cisa_kev", "full_sync"]).notNull(),
+  status: mysqlEnum("status", ["running", "completed", "failed"]).default("running").notNull(),
+  cvesFetched: int("cvesFetched").default(0).notNull(),
+  cvesInserted: int("cvesInserted").default(0).notNull(),
+  cvesUpdated: int("cvesUpdated").default(0).notNull(),
+  matchesCreated: int("matchesCreated").default(0).notNull(),
+  alertsGenerated: int("alertsGenerated").default(0).notNull(),
+  errorMessage: text("errorMessage"),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+export type IngestionRun = typeof ingestionRuns.$inferSelect;
+export type InsertIngestionRun = typeof ingestionRuns.$inferInsert;

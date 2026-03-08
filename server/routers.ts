@@ -6,6 +6,15 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
 import { invokeLLM } from "./_core/llm";
+import {
+  runIngestionPipeline,
+  getIngestionRuns,
+  getLastIngestionDate,
+  getOrgCveMatches,
+} from "./intelligence/ingestionPipeline";
+import { fetchNvdCveById } from "./intelligence/nvdClient";
+import { nvdCveCache, kevCatalog, deviceCveMatches, ingestionRuns } from "../drizzle/schema";
+import { eq, desc, sql, and, like } from "drizzle-orm";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 async function requireOrgAccess(userId: number, orgId: number, minRole?: "admin" | "owner") {
@@ -379,6 +388,110 @@ Respond in a calm, empowering, non-alarming tone. Structure your response as:
   }),
 
   // ─── Billing ───────────────────────────────────────────────────────────────
+  // ─── Intelligence / Ingestion ────────────────────────────────────────────
+  intelligence: router({
+    // Get ingestion run history
+    runs: protectedProcedure
+      .input(z.object({ limit: z.number().optional() }))
+      .query(async ({ ctx }) => {
+        return getIngestionRuns(20);
+      }),
+
+    // Get last ingestion date
+    lastIngestion: protectedProcedure
+      .query(async () => {
+        return getLastIngestionDate();
+      }),
+
+    // Trigger a new ingestion run (admin only)
+    triggerIngestion: protectedProcedure
+      .input(z.object({
+        orgId: z.number(),
+        mode: z.enum(["recent", "incremental"]).default("recent"),
+        daysBack: z.number().min(1).max(30).default(7),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await requireOrgAccess(ctx.user.id, input.orgId, "admin");
+        // Run in background — don't await
+        const progressLog: string[] = [];
+        runIngestionPipeline({
+          mode: input.mode,
+          daysBack: input.daysBack,
+          onProgress: (stage, detail) => {
+            progressLog.push(`[${stage}] ${detail}`);
+            console.log(`[Ingestion] ${stage}: ${detail}`);
+          },
+        }).catch(err => console.error("[Ingestion] Pipeline failed:", err));
+        return { started: true, message: `Ingestion started (${input.mode}, last ${input.daysBack} days)` };
+      }),
+
+    // Get CVE matches for an org
+    orgMatches: protectedProcedure
+      .input(z.object({ orgId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        await requireOrgAccess(ctx.user.id, input.orgId);
+        return getOrgCveMatches(input.orgId);
+      }),
+
+    // Search NVD cache by keyword
+    searchCves: protectedProcedure
+      .input(z.object({
+        query: z.string().min(2),
+        limit: z.number().min(1).max(50).default(20),
+      }))
+      .query(async ({ ctx, input }) => {
+        const dbConn = await db.getDb();
+        if (!dbConn) return [];
+        return dbConn
+          .select({
+            cveId: nvdCveCache.cveId,
+            description: nvdCveCache.description,
+            cvssV3Score: nvdCveCache.cvssV3Score,
+            cvssV3Severity: nvdCveCache.cvssV3Severity,
+            isKev: nvdCveCache.isKev,
+            attackVector: nvdCveCache.attackVector,
+            nvdPublishedAt: nvdCveCache.nvdPublishedAt,
+          })
+          .from(nvdCveCache)
+          .where(sql`${nvdCveCache.description} LIKE ${`%${input.query}%`} OR ${nvdCveCache.cveId} LIKE ${`%${input.query}%`}`)
+          .orderBy(desc(nvdCveCache.nvdPublishedAt))
+          .limit(input.limit);
+      }),
+
+    // Get KEV catalog stats
+    kevStats: protectedProcedure
+      .query(async () => {
+        const dbConn = await db.getDb();
+        if (!dbConn) return { total: 0, withRansomware: 0, recentlyAdded: 0 };
+        const [total] = await dbConn.select({ count: sql<number>`count(*)` }).from(kevCatalog);
+        const [withRansomware] = await dbConn
+          .select({ count: sql<number>`count(*)` })
+          .from(kevCatalog)
+          .where(eq(kevCatalog.knownRansomwareCampaignUse, "Known"));
+        return {
+          total: total?.count ?? 0,
+          withRansomware: withRansomware?.count ?? 0,
+        };
+      }),
+
+    // Get a single CVE detail (from cache or live NVD)
+    getCve: protectedProcedure
+      .input(z.object({ cveId: z.string() }))
+      .query(async ({ ctx, input }) => {
+        const dbConn = await db.getDb();
+        if (dbConn) {
+          const cached = await dbConn
+            .select()
+            .from(nvdCveCache)
+            .where(eq(nvdCveCache.cveId, input.cveId))
+            .limit(1);
+          if (cached.length > 0) return cached[0];
+        }
+        // Fall back to live NVD API
+        return fetchNvdCveById(input.cveId);
+      }),
+  }),
+
   billing: router({
     get: protectedProcedure
       .input(z.object({ orgId: z.number() }))

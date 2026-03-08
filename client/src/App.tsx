@@ -14,6 +14,7 @@ import Team from "./pages/Team";
 import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
 import Onboarding from "./pages/Onboarding";
+import Intelligence from "./pages/Intelligence";
 
 function Router() {
   return (
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/dashboard/team" component={Team} />
       <Route path="/dashboard/billing" component={Billing} />
       <Route path="/dashboard/settings" component={Settings} />
+      <Route path="/dashboard/intelligence" component={Intelligence} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

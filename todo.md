@@ -90,3 +90,19 @@
 - [x] Vitest tests for all new routers (25 tests passing)
 - [x] Empty states and loading skeletons for all pages
 - [x] Final checkpoint and delivery
+
+## Sprint 2: NVD/CISA KEV Live Ingestion Pipeline
+- [x] Extend schema: nvd_cve_cache, kev_catalog, device_cve_matches, ingestion_runs tables
+- [x] NVD API v2 client: fetch CVEs by lastModified date range, paginate, normalize
+- [x] CISA KEV fetcher: pull JSON catalog, upsert into kev_catalog table
+- [x] CPE normalization engine: vendor/product alias map, Levenshtein fuzzy match
+- [x] Device-to-CVE matching: exact CPE, fuzzy CPE, fingerprint strategies with confidence scores
+- [x] Sentinel risk score calculation: CVSS + KEV flag + exploit available + patch status
+- [x] Ingestion pipeline orchestrator: incremental delta updates, auto-alert generation
+- [x] Auto-alert generation: create org alerts when matched CVE sentinel risk score >= 60
+- [x] Intelligence UI page: ingestion controls, matched CVEs, KEV stats, CVE search
+- [x] tRPC procedures: intelligence.runs, lastIngestion, triggerIngestion, orgMatches, searchCves, kevStats, getCve
+- [x] Intelligence nav item added to sidebar
+- [x] OAuth avatarUrl column fix applied (SQL ALTER + db:push)
+- [x] 25 vitest tests passing
+- [x] Final checkpoint and delivery

@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Cpu, ShieldAlert, Bell, Bot,
   Users, CreditCard, Settings, LogOut, ChevronDown,
-  Building2, Menu, X
+  Building2, Menu, X, Telescope
 } from "lucide-react";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { label: "Devices", icon: Cpu, href: "/dashboard/devices" },
   { label: "Vulnerabilities", icon: ShieldAlert, href: "/dashboard/vulnerabilities" },
   { label: "Alerts", icon: Bell, href: "/dashboard/alerts" },
+  { label: "Intelligence", icon: Telescope, href: "/dashboard/intelligence" },
   { label: "Agent Console", icon: Bot, href: "/dashboard/agent" },
 ];
 
