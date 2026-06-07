@@ -92,6 +92,7 @@ If these OAuth values are missing, the server can still start, but sign-in and c
 - PORT: Server port override (default 3000)
 - NODE_ENV: development or production
 - OWNER_OPEN_ID: Bootstrap owner OpenID value
+- DEV_BYPASS_AUTH: Set to true to skip OAuth and auto-provision a local dev user/org for UI testing
 
 ### Optional integrations and intelligence tuning
 

@@ -1,5 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { ENV } from "./_core/env";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
@@ -19,6 +20,10 @@ import { eq, desc, sql, and, like } from "drizzle-orm";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 async function requireOrgAccess(userId: number, orgId: number, minRole?: "admin" | "owner") {
+  if (ENV.devBypassAuth) {
+    return "owner" as const;
+  }
+
   const role = await db.getUserOrgRole(orgId, userId);
   if (!role) throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this organization" });
   if (minRole === "owner" && role !== "owner") throw new TRPCError({ code: "FORBIDDEN", message: "Owner access required" });
