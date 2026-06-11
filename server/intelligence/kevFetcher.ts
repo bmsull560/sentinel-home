@@ -17,11 +17,11 @@ export interface KevEntry {
   vendorProject: string;
   product: string;
   vulnerabilityName: string;
-  dateAdded: string;           // "YYYY-MM-DD"
+  dateAdded: string; // "YYYY-MM-DD"
   shortDescription: string;
   requiredAction: string;
-  dueDate: string;             // "YYYY-MM-DD"
-  knownRansomwareCampaignUse: string;  // "Known" | "Unknown"
+  dueDate: string; // "YYYY-MM-DD"
+  knownRansomwareCampaignUse: string; // "Known" | "Unknown"
   notes: string;
 }
 
@@ -40,7 +40,7 @@ export interface KevCatalogResponse {
 export async function fetchKevCatalog(): Promise<KevCatalogResponse> {
   const res = await fetch(KEV_URL, {
     headers: {
-      "Accept": "application/json",
+      Accept: "application/json",
       "User-Agent": "Sentinel-Home/1.0 (security-monitoring)",
     },
   });
@@ -52,18 +52,20 @@ export async function fetchKevCatalog(): Promise<KevCatalogResponse> {
   const data = await res.json();
 
   // Normalize the response
-  const vulnerabilities: KevEntry[] = (data.vulnerabilities ?? []).map((v: any) => ({
-    cveId: v.cveID ?? v.cveId ?? "",
-    vendorProject: v.vendorProject ?? "",
-    product: v.product ?? "",
-    vulnerabilityName: v.vulnerabilityName ?? "",
-    dateAdded: v.dateAdded ?? "",
-    shortDescription: v.shortDescription ?? "",
-    requiredAction: v.requiredAction ?? "",
-    dueDate: v.dueDate ?? "",
-    knownRansomwareCampaignUse: v.knownRansomwareCampaignUse ?? "Unknown",
-    notes: v.notes ?? "",
-  }));
+  const vulnerabilities: KevEntry[] = (data.vulnerabilities ?? []).map(
+    (v: any) => ({
+      cveId: v.cveID ?? v.cveId ?? "",
+      vendorProject: v.vendorProject ?? "",
+      product: v.product ?? "",
+      vulnerabilityName: v.vulnerabilityName ?? "",
+      dateAdded: v.dateAdded ?? "",
+      shortDescription: v.shortDescription ?? "",
+      requiredAction: v.requiredAction ?? "",
+      dueDate: v.dueDate ?? "",
+      knownRansomwareCampaignUse: v.knownRansomwareCampaignUse ?? "Unknown",
+      notes: v.notes ?? "",
+    })
+  );
 
   return {
     title: data.title ?? "CISA KEV Catalog",

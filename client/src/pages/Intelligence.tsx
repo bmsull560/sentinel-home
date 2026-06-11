@@ -24,19 +24,27 @@ import {
 
 function severityColor(severity: string | null | undefined) {
   switch ((severity ?? "").toUpperCase()) {
-    case "CRITICAL": return "text-black bg-black/10 border-black/20";
-    case "HIGH":     return "text-black bg-black/8 border-black/15";
-    case "MEDIUM":   return "text-black/70 bg-black/5 border-black/10";
-    default:         return "text-black/50 bg-black/3 border-black/8";
+    case "CRITICAL":
+      return "text-black bg-black/10 border-black/20";
+    case "HIGH":
+      return "text-black bg-black/8 border-black/15";
+    case "MEDIUM":
+      return "text-black/70 bg-black/5 border-black/10";
+    default:
+      return "text-black/50 bg-black/3 border-black/8";
   }
 }
 
 function statusIcon(status: string) {
   switch (status) {
-    case "completed": return <CheckCircle className="w-4 h-4 text-black" />;
-    case "failed":    return <XCircle className="w-4 h-4 text-black/40" />;
-    case "running":   return <Loader2 className="w-4 h-4 animate-spin text-black/60" />;
-    default:          return <Clock className="w-4 h-4 text-black/30" />;
+    case "completed":
+      return <CheckCircle className="w-4 h-4 text-black" />;
+    case "failed":
+      return <XCircle className="w-4 h-4 text-black/40" />;
+    case "running":
+      return <Loader2 className="w-4 h-4 animate-spin text-black/60" />;
+    default:
+      return <Clock className="w-4 h-4 text-black/30" />;
   }
 }
 
@@ -60,8 +68,11 @@ export default function Intelligence() {
     { refetchInterval: 30_000 } // poll every 30s to keep next-run countdown fresh
   );
 
-  const { data: runs, refetch: refetchRuns, isLoading: runsLoading } =
-    trpc.intelligence.runs.useQuery({ limit: 20 });
+  const {
+    data: runs,
+    refetch: refetchRuns,
+    isLoading: runsLoading,
+  } = trpc.intelligence.runs.useQuery({ limit: 20 });
 
   const { data: kevStats } = trpc.intelligence.kevStats.useQuery();
 
@@ -80,11 +91,11 @@ export default function Intelligence() {
     );
 
   const triggerMutation = trpc.intelligence.triggerIngestion.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(data.message);
       setTimeout(() => refetchRuns(), 2000);
     },
-    onError: (err) => toast.error(err.message),
+    onError: err => toast.error(err.message),
   });
 
   function handleSearch(e: React.FormEvent) {
@@ -99,13 +110,13 @@ export default function Intelligence() {
 
   const latestRun = runs?.[0];
   const totalMatches = orgMatches?.length ?? 0;
-  const criticalMatches = orgMatches?.filter(m => (m.sentinelRiskScore ?? 0) >= 80).length ?? 0;
+  const criticalMatches =
+    orgMatches?.filter(m => (m.sentinelRiskScore ?? 0) >= 80).length ?? 0;
   const kevMatches = orgMatches?.filter(m => m.isKev).length ?? 0;
 
   return (
     <AppShell>
       <div className="p-8 max-w-6xl mx-auto space-y-8">
-
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
@@ -113,7 +124,8 @@ export default function Intelligence() {
               Threat Intelligence
             </h1>
             <p className="text-sm text-black/50 mt-1">
-              Live CVE ingestion from NVD &amp; CISA KEV — matched to your devices
+              Live CVE ingestion from NVD &amp; CISA KEV — matched to your
+              devices
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -133,10 +145,11 @@ export default function Intelligence() {
               disabled={triggerMutation.isPending || !orgId}
               className="bg-black text-white hover:bg-black/80 rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2"
             >
-              {triggerMutation.isPending
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : <RefreshCw className="w-4 h-4" />
-              }
+              {triggerMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
               Run Ingestion
             </Button>
           </div>
@@ -169,7 +182,7 @@ export default function Intelligence() {
               icon: <TrendingUp className="w-5 h-5" />,
               sub: `${kevStats?.withRansomware ?? 0} ransomware`,
             },
-          ].map((stat) => (
+          ].map(stat => (
             <div
               key={stat.label}
               className="bg-white rounded-2xl border border-black/6 p-5 shadow-sm"
@@ -178,8 +191,10 @@ export default function Intelligence() {
                 <span className="text-xs font-medium text-black/40 uppercase tracking-wider">
                   {stat.label}
                 </span>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: "oklab(0.7 0.0260473 -0.147721 / 0.2)" }}>
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: "oklab(0.7 0.0260473 -0.147721 / 0.2)" }}
+                >
                   {stat.icon}
                 </div>
               </div>
@@ -196,8 +211,12 @@ export default function Intelligence() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-black/40" />
-              <span className="text-sm font-semibold text-black">Automated Ingestion Schedule</span>
-              <span className="text-xs text-black/40">— every 6 hours (UTC)</span>
+              <span className="text-sm font-semibold text-black">
+                Automated Ingestion Schedule
+              </span>
+              <span className="text-xs text-black/40">
+                — every 6 hours (UTC)
+              </span>
             </div>
             <div className="flex items-center gap-2">
               {schedulerStatus?.isRunning ? (
@@ -213,11 +232,19 @@ export default function Intelligence() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">Next Run</div>
+              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">
+                Next Run
+              </div>
               <div className="text-sm font-semibold text-black">
-                {schedulerStatus?.nextRunAt
-                  ? new Date(schedulerStatus.nextRunAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })
-                  : <span className="text-black/30">—</span>}
+                {schedulerStatus?.nextRunAt ? (
+                  new Date(schedulerStatus.nextRunAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    timeZoneName: "short",
+                  })
+                ) : (
+                  <span className="text-black/30">—</span>
+                )}
               </div>
               {schedulerStatus?.nextRunAt && (
                 <div className="text-xs text-black/40">
@@ -226,34 +253,57 @@ export default function Intelligence() {
               )}
             </div>
             <div>
-              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">Last Run</div>
+              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">
+                Last Run
+              </div>
               <div className="text-sm font-semibold text-black">
-                {schedulerStatus?.lastRunAt
-                  ? new Date(schedulerStatus.lastRunAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : <span className="text-black/30">Never</span>}
+                {schedulerStatus?.lastRunAt ? (
+                  new Date(schedulerStatus.lastRunAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                ) : (
+                  <span className="text-black/30">Never</span>
+                )}
               </div>
               {schedulerStatus?.lastRunError && (
-                <div className="text-xs text-red-500 truncate max-w-[120px]" title={schedulerStatus.lastRunError}>
+                <div
+                  className="text-xs text-red-500 truncate max-w-[120px]"
+                  title={schedulerStatus.lastRunError}
+                >
                   {schedulerStatus.lastRunError}
                 </div>
               )}
             </div>
             <div>
-              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">Total Runs</div>
+              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">
+                Total Runs
+              </div>
               <div className="text-sm font-semibold text-black tabular-nums">
                 {schedulerStatus?.totalRuns ?? 0}
                 {(schedulerStatus?.totalErrors ?? 0) > 0 && (
-                  <span className="text-xs text-black/40 ml-1">({schedulerStatus?.totalErrors} errors)</span>
+                  <span className="text-xs text-black/40 ml-1">
+                    ({schedulerStatus?.totalErrors} errors)
+                  </span>
                 )}
               </div>
             </div>
             <div>
-              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">Last Result</div>
+              <div className="text-xs text-black/40 uppercase tracking-wider mb-1">
+                Last Result
+              </div>
               {schedulerStatus?.lastResult ? (
                 <div className="text-xs text-black/60 space-y-0.5">
-                  <div>{schedulerStatus.lastResult.cvesFetched} CVEs fetched</div>
-                  <div>{schedulerStatus.lastResult.matchesCreated} matches created</div>
-                  <div>{schedulerStatus.lastResult.alertsGenerated} alerts generated</div>
+                  <div>
+                    {schedulerStatus.lastResult.cvesFetched} CVEs fetched
+                  </div>
+                  <div>
+                    {schedulerStatus.lastResult.matchesCreated} matches created
+                  </div>
+                  <div>
+                    {schedulerStatus.lastResult.alertsGenerated} alerts
+                    generated
+                  </div>
                 </div>
               ) : (
                 <div className="text-sm text-black/30">—</div>
@@ -266,12 +316,12 @@ export default function Intelligence() {
         {lastIngestion && (
           <div className="flex items-center gap-2 text-sm text-black/50 bg-black/3 rounded-xl px-4 py-3">
             <Info className="w-4 h-4" />
-            Last successful ingestion: {new Date(lastIngestion).toLocaleString()}
+            Last successful ingestion:{" "}
+            {new Date(lastIngestion).toLocaleString()}
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
           {/* Device CVE Matches */}
           <div className="bg-white rounded-2xl border border-black/6 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-black/6">
@@ -288,8 +338,11 @@ export default function Intelligence() {
                   <Loader2 className="w-5 h-5 animate-spin text-black/30" />
                 </div>
               ) : orgMatches && orgMatches.length > 0 ? (
-                orgMatches.slice(0, 30).map((match) => (
-                  <div key={match.matchId} className="px-6 py-4 hover:bg-black/2 transition-colors">
+                orgMatches.slice(0, 30).map(match => (
+                  <div
+                    key={match.matchId}
+                    className="px-6 py-4 hover:bg-black/2 transition-colors"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -303,7 +356,8 @@ export default function Intelligence() {
                           )}
                         </div>
                         <p className="text-xs text-black/50 truncate">
-                          {match.deviceName} — {match.deviceManufacturer} {match.deviceModel}
+                          {match.deviceName} — {match.deviceManufacturer}{" "}
+                          {match.deviceModel}
                         </p>
                         <p className="text-xs text-black/30 mt-0.5 line-clamp-1">
                           {match.cveDescription}
@@ -317,7 +371,9 @@ export default function Intelligence() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${severityColor(match.cvssV3Severity)}`}>
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${severityColor(match.cvssV3Severity)}`}
+                      >
                         {match.cvssV3Severity ?? "N/A"}
                       </span>
                       <span className="text-[10px] text-black/30">
@@ -370,7 +426,7 @@ export default function Intelligence() {
                   <Loader2 className="w-5 h-5 animate-spin text-black/30" />
                 </div>
               ) : runs && runs.length > 0 ? (
-                runs.map((run) => (
+                runs.map(run => (
                   <div key={run.id} className="px-6 py-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -384,8 +440,8 @@ export default function Intelligence() {
                             run.status === "completed"
                               ? "border-black/20 text-black/60"
                               : run.status === "failed"
-                              ? "border-black/30 text-black/40"
-                              : "border-black/10 text-black/30"
+                                ? "border-black/30 text-black/40"
+                                : "border-black/10 text-black/30"
                           }`}
                         >
                           {run.status}
@@ -407,7 +463,9 @@ export default function Intelligence() {
                             <div className="text-sm font-semibold text-black tabular-nums">
                               {s.value}
                             </div>
-                            <div className="text-[10px] text-black/30">{s.label}</div>
+                            <div className="text-[10px] text-black/30">
+                              {s.label}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -464,7 +522,7 @@ export default function Intelligence() {
 
             {searchResults && searchResults.length > 0 && (
               <div className="space-y-3">
-                {searchResults.map((cve) => (
+                {searchResults.map(cve => (
                   <div
                     key={cve.cveId}
                     className="flex items-start gap-4 p-4 rounded-xl border border-black/6 hover:border-black/12 transition-colors"
@@ -479,7 +537,9 @@ export default function Intelligence() {
                             KEV
                           </Badge>
                         )}
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${severityColor(cve.cvssV3Severity)}`}>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${severityColor(cve.cvssV3Severity)}`}
+                        >
                           {cve.cvssV3Severity ?? "N/A"}
                         </span>
                       </div>
@@ -506,7 +566,9 @@ export default function Intelligence() {
             {activeSearch && !searchLoading && searchResults?.length === 0 && (
               <div className="text-center py-8">
                 <AlertTriangle className="w-8 h-8 text-black/10 mx-auto mb-2" />
-                <p className="text-sm text-black/30">No CVEs found for "{activeSearch}"</p>
+                <p className="text-sm text-black/30">
+                  No CVEs found for "{activeSearch}"
+                </p>
                 <p className="text-xs text-black/20 mt-1">
                   Try running ingestion first to populate the cache
                 </p>
@@ -514,7 +576,6 @@ export default function Intelligence() {
             )}
           </div>
         </div>
-
       </div>
     </AppShell>
   );

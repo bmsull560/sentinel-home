@@ -1,4 +1,4 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, SESSION_TTL_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
@@ -36,13 +36,24 @@ export function registerOAuthRoutes(app: Express) {
         lastSignedIn: new Date(),
       });
 
-      const sessionToken = await sdk.createSessionToken(userInfo.openId, {
-        name: userInfo.name || "",
-        expiresInMs: ONE_YEAR_MS,
-      });
+      const user = await db.getUserByOpenId(userInfo.openId);
+      if (!user) {
+        res.status(500).json({ error: "Failed to retrieve user after upsert" });
+        return;
+      }
+
+      const sessionToken = await sdk.createDbSession(
+        user.id,
+        user.openId,
+        req.ip,
+        req.get("user-agent")
+      );
 
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      res.cookie(COOKIE_NAME, sessionToken, {
+        ...cookieOptions,
+        maxAge: SESSION_TTL_MS,
+      });
 
       res.redirect(302, "/");
     } catch (error) {

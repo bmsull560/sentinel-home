@@ -35,7 +35,7 @@ export interface NvdCveItem {
 }
 
 export interface CpeMatch {
-  criteria: string;           // e.g. "cpe:2.3:h:ring:video_doorbell:*:*:*:*:*:*:*:*"
+  criteria: string; // e.g. "cpe:2.3:h:ring:video_doorbell:*:*:*:*:*:*:*:*"
   matchCriteriaId: string;
   vulnerable: boolean;
   versionStartIncluding?: string;
@@ -191,7 +191,9 @@ export async function fetchNvdCvesByLastModified(
 /**
  * Fetch a single CVE by ID.
  */
-export async function fetchNvdCveById(cveId: string): Promise<NvdCveItem | null> {
+export async function fetchNvdCveById(
+  cveId: string
+): Promise<NvdCveItem | null> {
   const apiKey = process.env.NVD_API_KEY;
   const headers: Record<string, string> = apiKey ? { apiKey } : {};
 

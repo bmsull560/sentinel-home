@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1763900734653,
-      "tag": "0000_useful_wolf_cub",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1763900796566,
-      "tag": "0001_damp_goblin_queen",
+      "when": 1750000000000,
+      "tag": "0000_baseline_schema",
       "breakpoints": true
     }
   ]

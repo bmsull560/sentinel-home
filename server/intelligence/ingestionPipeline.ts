@@ -26,8 +26,16 @@ import {
   orgMembers,
 } from "../../drizzle/schema";
 import { eq, and, sql, inArray } from "drizzle-orm";
-import { fetchNvdCvesByLastModified, fetchNvdRecentCves, type NvdCveItem } from "./nvdClient";
-import { fetchKevCatalog, buildKevLookupMap, type KevEntry } from "./kevFetcher";
+import {
+  fetchNvdCvesByLastModified,
+  fetchNvdRecentCves,
+  type NvdCveItem,
+} from "./nvdClient";
+import {
+  fetchKevCatalog,
+  buildKevLookupMap,
+  type KevEntry,
+} from "./kevFetcher";
 import {
   matchCveToDevices,
   calculateSentinelRiskScore,
@@ -76,28 +84,31 @@ async function ingestKevCatalog(
 
     for (const entry of batch) {
       kevMap.set(entry.cveId, entry);
-      await db.insert(kevCatalog).values({
-        cveId: entry.cveId,
-        vendorProject: entry.vendorProject,
-        product: entry.product,
-        vulnerabilityName: entry.vulnerabilityName,
-        dateAdded: entry.dateAdded,
-        shortDescription: entry.shortDescription,
-        requiredAction: entry.requiredAction,
-        dueDate: entry.dueDate,
-        knownRansomwareCampaignUse: entry.knownRansomwareCampaignUse,
-        notes: entry.notes,
-      }).onDuplicateKeyUpdate({
-        set: {
+      await db
+        .insert(kevCatalog)
+        .values({
+          cveId: entry.cveId,
           vendorProject: entry.vendorProject,
           product: entry.product,
           vulnerabilityName: entry.vulnerabilityName,
+          dateAdded: entry.dateAdded,
+          shortDescription: entry.shortDescription,
           requiredAction: entry.requiredAction,
           dueDate: entry.dueDate,
           knownRansomwareCampaignUse: entry.knownRansomwareCampaignUse,
           notes: entry.notes,
-        },
-      });
+        })
+        .onDuplicateKeyUpdate({
+          set: {
+            vendorProject: entry.vendorProject,
+            product: entry.product,
+            vulnerabilityName: entry.vulnerabilityName,
+            requiredAction: entry.requiredAction,
+            dueDate: entry.dueDate,
+            knownRansomwareCampaignUse: entry.knownRansomwareCampaignUse,
+            notes: entry.notes,
+          },
+        });
       upserted++;
     }
   }
@@ -158,7 +169,10 @@ async function ingestNvdCves(
       await db.insert(nvdCveCache).values(row);
       inserted++;
     } else {
-      await db.update(nvdCveCache).set(row).where(eq(nvdCveCache.cveId, cve.cveId));
+      await db
+        .update(nvdCveCache)
+        .set(row)
+        .where(eq(nvdCveCache.cveId, cve.cveId));
       updated++;
     }
   }
@@ -208,7 +222,10 @@ async function matchAndAlert(
 
         // Check if this match already exists
         const existingMatch = await db
-          .select({ id: deviceCveMatches.id, alertGenerated: deviceCveMatches.alertGenerated })
+          .select({
+            id: deviceCveMatches.id,
+            alertGenerated: deviceCveMatches.alertGenerated,
+          })
           .from(deviceCveMatches)
           .where(
             and(
@@ -270,12 +287,19 @@ async function matchAndAlert(
         matchesCreated++;
 
         // Generate alert for action_recommended or immediate_attention
-        if (severity === "action_recommended" || severity === "immediate_attention") {
-          const alertSeverity = severity === "immediate_attention" ? "critical" : "warning";
-          const kevNote = match.isKev ? " (CISA KEV — actively exploited in the wild)" : "";
-          const title = severity === "immediate_attention"
-            ? `🚨 Critical vulnerability on your device${kevNote}`
-            : `⚠️ Action recommended for your device`;
+        if (
+          severity === "action_recommended" ||
+          severity === "immediate_attention"
+        ) {
+          const alertSeverity =
+            severity === "immediate_attention" ? "critical" : "warning";
+          const kevNote = match.isKev
+            ? " (CISA KEV — actively exploited in the wild)"
+            : "";
+          const title =
+            severity === "immediate_attention"
+              ? `🚨 Critical vulnerability on your device${kevNote}`
+              : `⚠️ Action recommended for your device`;
 
           const device = orgDevices.find(d => d.id === match.deviceId);
           const deviceName = device?.name ?? "Unknown device";
@@ -307,11 +331,12 @@ async function matchAndAlert(
         }
 
         // Update device status based on highest severity match
-        const newStatus = severity === "immediate_attention"
-          ? "critical"
-          : severity === "action_recommended"
-          ? "at_risk"
-          : undefined;
+        const newStatus =
+          severity === "immediate_attention"
+            ? "critical"
+            : severity === "action_recommended"
+              ? "at_risk"
+              : undefined;
 
         if (newStatus) {
           await db
@@ -323,7 +348,10 @@ async function matchAndAlert(
     }
   }
 
-  onProgress?.("match", `Matching: ${matchesCreated} new matches, ${alertsGenerated} alerts`);
+  onProgress?.(
+    "match",
+    `Matching: ${matchesCreated} new matches, ${alertsGenerated} alerts`
+  );
   return { matchesCreated, alertsGenerated };
 }
 
@@ -362,27 +390,30 @@ export async function runIngestionPipeline(
     let cves: NvdCveItem[];
 
     if (options.mode === "incremental" && options.sinceDate) {
-      cves = await fetchNvdCvesByLastModified(options.sinceDate, new Date(), options.onProgress
-        ? (fetched, total) => options.onProgress!("nvd", `Fetched ${fetched}/${total} CVEs...`)
-        : undefined
+      cves = await fetchNvdCvesByLastModified(
+        options.sinceDate,
+        new Date(),
+        options.onProgress
+          ? (fetched, total) =>
+              options.onProgress!("nvd", `Fetched ${fetched}/${total} CVEs...`)
+          : undefined
       );
     } else {
       const daysBack = options.daysBack ?? 7;
-      cves = await fetchNvdRecentCves(daysBack, options.onProgress
-        ? (fetched, total) => options.onProgress!("nvd", `Fetched ${fetched}/${total} CVEs...`)
-        : undefined
+      cves = await fetchNvdRecentCves(
+        daysBack,
+        options.onProgress
+          ? (fetched, total) =>
+              options.onProgress!("nvd", `Fetched ${fetched}/${total} CVEs...`)
+          : undefined
       );
     }
 
     options.onProgress?.("nvd", `Fetched ${cves.length} CVEs total`);
 
     // Step 3: Ingest CVEs into cache
-    const { inserted: cvesInserted, updated: cvesUpdated } = await ingestNvdCves(
-      db,
-      cves,
-      kevMap,
-      options.onProgress
-    );
+    const { inserted: cvesInserted, updated: cvesUpdated } =
+      await ingestNvdCves(db, cves, kevMap, options.onProgress);
 
     // Step 4: Match CVEs to org devices and generate alerts
     const { matchesCreated, alertsGenerated } = await matchAndAlert(
@@ -395,15 +426,18 @@ export async function runIngestionPipeline(
     const durationMs = Date.now() - startMs;
 
     // Update ingestion run as completed
-    await db.update(ingestionRuns).set({
-      status: "completed",
-      cvesFetched: cves.length,
-      cvesInserted,
-      cvesUpdated,
-      matchesCreated,
-      alertsGenerated,
-      completedAt: new Date(),
-    }).where(eq(ingestionRuns.id, runId));
+    await db
+      .update(ingestionRuns)
+      .set({
+        status: "completed",
+        cvesFetched: cves.length,
+        cvesInserted,
+        cvesUpdated,
+        matchesCreated,
+        alertsGenerated,
+        completedAt: new Date(),
+      })
+      .where(eq(ingestionRuns.id, runId));
 
     return {
       runId,
@@ -417,11 +451,14 @@ export async function runIngestionPipeline(
     };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-    await db.update(ingestionRuns).set({
-      status: "failed",
-      errorMessage,
-      completedAt: new Date(),
-    }).where(eq(ingestionRuns.id, runId));
+    await db
+      .update(ingestionRuns)
+      .set({
+        status: "failed",
+        errorMessage,
+        completedAt: new Date(),
+      })
+      .where(eq(ingestionRuns.id, runId));
     throw err;
   }
 }

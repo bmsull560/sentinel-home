@@ -1,26 +1,59 @@
 <!doctype html>
 <html lang="en">
-
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+      content="width=device-width, initial-scale=1.0, maximum-scale=1"
+    />
+    <meta
+      name="description"
+      content="Sentinel Home — A multi-tenant security dashboard for connected devices. Monitor vulnerabilities, track alerts, and manage your device inventory with AI-assisted insights."
+    />
+    <meta name="theme-color" content="#0f172a" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="%VITE_APP_TITLE%" />
+    <meta
+      property="og:description"
+      content="Multi-tenant security dashboard for connected devices with vulnerability intelligence and AI-assisted explanations."
+    />
+    <meta property="og:type" content="website" />
+
     <link rel="icon" type="image/png" href="%VITE_APP_LOGO%" />
     <link rel="apple-touch-icon" href="%VITE_APP_LOGO%" />
     <title>%VITE_APP_TITLE%</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Umami Analytics — only injected when both env vars are configured -->
+    <script>
+      (function () {
+        const endpoint = "%VITE_ANALYTICS_ENDPOINT%";
+        const websiteId = "%VITE_ANALYTICS_WEBSITE_ID%";
+        if (
+          endpoint &&
+          !endpoint.startsWith("%VITE_") &&
+          websiteId &&
+          !websiteId.startsWith("%VITE_")
+        ) {
+          const s = document.createElement("script");
+          s.defer = true;
+          s.src = endpoint + "/script.js";
+          s.setAttribute("data-website-id", websiteId);
+          document.head.appendChild(s);
+        }
+      })();
+    </script>
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
   </body>
-
 </html>

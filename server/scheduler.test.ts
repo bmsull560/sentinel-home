@@ -57,8 +57,12 @@ describe("Ingestion Scheduler", () => {
     // Fully reset module-level state (counters, timestamps, task ref) between tests
     _resetSchedulerStateForTests();
     // Re-apply the default mock return value after clearAllMocks
-    (mockSchedule as ReturnType<typeof vi.fn>).mockReturnValue({ stop: mockStop });
-    (runIngestionPipeline as ReturnType<typeof vi.fn>).mockResolvedValue(mockResult);
+    (mockSchedule as ReturnType<typeof vi.fn>).mockReturnValue({
+      stop: mockStop,
+    });
+    (runIngestionPipeline as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockResult
+    );
   });
 
   afterEach(() => {
@@ -119,7 +123,8 @@ describe("Ingestion Scheduler", () => {
     it("calls runIngestionPipeline with incremental mode", async () => {
       await triggerManualRun();
       expect(runIngestionPipeline).toHaveBeenCalledOnce();
-      const [opts] = (runIngestionPipeline as ReturnType<typeof vi.fn>).mock.calls[0];
+      const [opts] = (runIngestionPipeline as ReturnType<typeof vi.fn>).mock
+        .calls[0];
       expect(opts.mode).toBe("incremental");
     });
 
@@ -192,12 +197,12 @@ describe("Ingestion Scheduler", () => {
     it("skips a second concurrent trigger while one is already running", async () => {
       // Make the first run take a tick
       let resolveFirst!: () => void;
-      (runIngestionPipeline as ReturnType<typeof vi.fn>)
-        .mockImplementationOnce(
-          () => new Promise<typeof mockResult>((res) => {
+      (runIngestionPipeline as ReturnType<typeof vi.fn>).mockImplementationOnce(
+        () =>
+          new Promise<typeof mockResult>(res => {
             resolveFirst = () => res(mockResult);
           })
-        );
+      );
 
       // Start first run (don't await yet)
       const first = triggerManualRun();

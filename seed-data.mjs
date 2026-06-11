@@ -19,29 +19,34 @@ const vulnerabilitiesData = [
   {
     cveId: "CVE-2024-1234",
     title: "Bluetooth Low Energy Authentication Bypass",
-    description: "A vulnerability in Bluetooth Low Energy (BLE) implementation allows unauthorized access to smart locks and IoT devices through authentication bypass.",
+    description:
+      "A vulnerability in Bluetooth Low Energy (BLE) implementation allows unauthorized access to smart locks and IoT devices through authentication bypass.",
     severity: "immediate_attention",
     affectedDevices: JSON.stringify(["smart_home", "iot"]),
     manufacturer: "Various",
     discoveredAt: new Date("2024-01-15"),
     patchAvailable: true,
-    patchDetails: "Update firmware to version 3.2.1 or later. Most manufacturers have released patches.",
+    patchDetails:
+      "Update firmware to version 3.2.1 or later. Most manufacturers have released patches.",
   },
   {
     cveId: "CVE-2024-5678",
     title: "Router DNS Hijacking Vulnerability",
-    description: "Certain router models are vulnerable to DNS hijacking attacks that could redirect users to malicious websites.",
+    description:
+      "Certain router models are vulnerable to DNS hijacking attacks that could redirect users to malicious websites.",
     severity: "action_recommended",
     affectedDevices: JSON.stringify(["router"]),
     manufacturer: "Multiple vendors",
     discoveredAt: new Date("2024-02-20"),
     patchAvailable: true,
-    patchDetails: "Enable automatic firmware updates and verify DNS settings are using trusted servers.",
+    patchDetails:
+      "Enable automatic firmware updates and verify DNS settings are using trusted servers.",
   },
   {
     cveId: "CVE-2024-9012",
     title: "Smart Camera Video Stream Exposure",
-    description: "Some smart cameras inadvertently expose video streams through misconfigured cloud services.",
+    description:
+      "Some smart cameras inadvertently expose video streams through misconfigured cloud services.",
     severity: "action_recommended",
     affectedDevices: JSON.stringify(["smart_home"]),
     manufacturer: "Ring, Wyze",
@@ -52,7 +57,8 @@ const vulnerabilitiesData = [
   {
     cveId: "CVE-2024-3456",
     title: "Mobile OS Security Update",
-    description: "Critical security patches for mobile operating systems addressing multiple vulnerabilities.",
+    description:
+      "Critical security patches for mobile operating systems addressing multiple vulnerabilities.",
     severity: "be_aware",
     affectedDevices: JSON.stringify(["mobile"]),
     manufacturer: "Apple, Google",
@@ -63,7 +69,8 @@ const vulnerabilitiesData = [
   {
     cveId: null,
     title: "Outdated Firmware Advisory",
-    description: "General advisory for devices running firmware versions older than 6 months.",
+    description:
+      "General advisory for devices running firmware versions older than 6 months.",
     severity: "calm",
     affectedDevices: JSON.stringify(["smart_home", "iot", "router"]),
     manufacturer: "All",
@@ -101,9 +108,16 @@ try {
       steps: JSON.stringify([
         { step: 1, description: "Log into your router admin panel" },
         { step: 2, description: "Navigate to DNS settings" },
-        { step: 3, description: "Set DNS servers to trusted providers (e.g., 1.1.1.1, 8.8.8.8)" },
+        {
+          step: 3,
+          description:
+            "Set DNS servers to trusted providers (e.g., 1.1.1.1, 8.8.8.8)",
+        },
         { step: 4, description: "Enable automatic firmware updates" },
-        { step: 5, description: "Change default admin password if not already done" },
+        {
+          step: 5,
+          description: "Change default admin password if not already done",
+        },
       ]),
       difficulty: "moderate",
       estimatedTime: "20-30 minutes",
@@ -116,7 +130,6 @@ try {
 
   console.log("✓ Seeded action plans");
   console.log("\n✓ Database seeding completed successfully!");
-
 } catch (error) {
   console.error("Error seeding database:", error);
   process.exit(1);

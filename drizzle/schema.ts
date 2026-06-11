@@ -31,7 +31,9 @@ export const organizations = mysqlTable("organizations", {
   slug: varchar("slug", { length: 64 }).notNull().unique(),
   name: varchar("name", { length: 200 }).notNull(),
   logoUrl: text("logoUrl"),
-  plan: mysqlEnum("plan", ["free", "starter", "pro", "enterprise"]).default("free").notNull(),
+  plan: mysqlEnum("plan", ["free", "starter", "pro", "enterprise"])
+    .default("free")
+    .notNull(),
   planSeats: int("planSeats").default(3).notNull(),
   planDevices: int("planDevices").default(10).notNull(),
   billingEmail: varchar("billingEmail", { length: 320 }),
@@ -46,7 +48,9 @@ export const orgMembers = mysqlTable("org_members", {
   id: int("id").autoincrement().primaryKey(),
   orgId: int("orgId").notNull(),
   userId: int("userId").notNull(),
-  role: mysqlEnum("role", ["owner", "admin", "viewer"]).default("viewer").notNull(),
+  role: mysqlEnum("role", ["owner", "admin", "viewer"])
+    .default("viewer")
+    .notNull(),
   invitedBy: int("invitedBy"),
   joinedAt: timestamp("joinedAt").defaultNow().notNull(),
 });
@@ -85,15 +89,26 @@ export const devices = mysqlTable("devices", {
   orgId: int("orgId").notNull(),
   name: varchar("name", { length: 200 }).notNull(),
   category: mysqlEnum("category", [
-    "smart_home", "iot", "mobile", "laptop",
-    "router", "automotive", "health", "child_pet", "other",
-  ]).default("other").notNull(),
+    "smart_home",
+    "iot",
+    "mobile",
+    "laptop",
+    "router",
+    "automotive",
+    "health",
+    "child_pet",
+    "other",
+  ])
+    .default("other")
+    .notNull(),
   manufacturer: varchar("manufacturer", { length: 100 }),
   model: varchar("model", { length: 200 }),
   firmwareVersion: varchar("firmwareVersion", { length: 50 }),
   ipAddress: varchar("ipAddress", { length: 45 }),
   macAddress: varchar("macAddress", { length: 17 }),
-  status: mysqlEnum("status", ["secure", "at_risk", "critical", "unknown"]).default("unknown").notNull(),
+  status: mysqlEnum("status", ["secure", "at_risk", "critical", "unknown"])
+    .default("unknown")
+    .notNull(),
   lastSeenAt: timestamp("lastSeenAt"),
   matchedCpeVendor: varchar("matchedCpeVendor", { length: 100 }),
   matchedCpeProduct: varchar("matchedCpeProduct", { length: 200 }),
@@ -114,7 +129,14 @@ export const vulnerabilities = mysqlTable("vulnerabilities", {
   title: varchar("title", { length: 300 }).notNull(),
   description: text("description"),
   plainDescription: text("plainDescription"),
-  severity: mysqlEnum("severity", ["calm", "be_aware", "action_recommended", "immediate_attention"]).default("calm").notNull(),
+  severity: mysqlEnum("severity", [
+    "calm",
+    "be_aware",
+    "action_recommended",
+    "immediate_attention",
+  ])
+    .default("calm")
+    .notNull(),
   cvssScore: varchar("cvssScore", { length: 5 }),
   attackVector: varchar("attackVector", { length: 50 }),
   affectedFirmware: varchar("affectedFirmware", { length: 100 }),
@@ -122,7 +144,9 @@ export const vulnerabilities = mysqlTable("vulnerabilities", {
   patchVersion: varchar("patchVersion", { length: 50 }),
   isKev: boolean("isKev").default(false),
   exploitAvailable: boolean("exploitAvailable").default(false),
-  status: mysqlEnum("status", ["open", "acknowledged", "resolved", "wont_fix"]).default("open").notNull(),
+  status: mysqlEnum("status", ["open", "acknowledged", "resolved", "wont_fix"])
+    .default("open")
+    .notNull(),
   aiExplanation: text("aiExplanation"),
   actionSteps: json("actionSteps"),
   publishedAt: timestamp("publishedAt"),
@@ -141,8 +165,12 @@ export const alerts = mysqlTable("alerts", {
   vulnerabilityId: int("vulnerabilityId"),
   title: varchar("title", { length: 300 }).notNull(),
   message: text("message"),
-  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(),
-  status: mysqlEnum("status", ["unread", "read", "acknowledged", "dismissed"]).default("unread").notNull(),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"])
+    .default("info")
+    .notNull(),
+  status: mysqlEnum("status", ["unread", "read", "acknowledged", "dismissed"])
+    .default("unread")
+    .notNull(),
   acknowledgedBy: int("acknowledgedBy"),
   acknowledgedAt: timestamp("acknowledgedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -155,7 +183,9 @@ export const agentRuns = mysqlTable("agent_runs", {
   orgId: int("orgId").notNull(),
   triggeredBy: int("triggeredBy"),
   intent: text("intent").notNull(),
-  status: mysqlEnum("status", ["queued", "running", "completed", "failed"]).default("queued").notNull(),
+  status: mysqlEnum("status", ["queued", "running", "completed", "failed"])
+    .default("queued")
+    .notNull(),
   agentTrace: json("agentTrace"),
   result: text("result"),
   tokensUsed: int("tokensUsed"),
@@ -218,7 +248,9 @@ export const kevCatalog = mysqlTable("kev_catalog", {
   shortDescription: text("shortDescription"),
   requiredAction: text("requiredAction"),
   dueDate: varchar("dueDate", { length: 20 }),
-  knownRansomwareCampaignUse: varchar("knownRansomwareCampaignUse", { length: 10 }),
+  knownRansomwareCampaignUse: varchar("knownRansomwareCampaignUse", {
+    length: 10,
+  }),
   notes: text("notes"),
   ingestedAt: timestamp("ingestedAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -234,7 +266,12 @@ export const deviceCveMatches = mysqlTable("device_cve_matches", {
   orgId: int("orgId").notNull(),
   cveId: varchar("cveId", { length: 30 }).notNull(),
   // Match strategy used
-  matchStrategy: mysqlEnum("matchStrategy", ["exact_cpe", "fuzzy_cpe", "fingerprint", "vendor_product"]).notNull(),
+  matchStrategy: mysqlEnum("matchStrategy", [
+    "exact_cpe",
+    "fuzzy_cpe",
+    "fingerprint",
+    "vendor_product",
+  ]).notNull(),
   // Confidence 0-100
   confidenceScore: int("confidenceScore").notNull(),
   // Sentinel composite risk score 0-100
@@ -260,7 +297,9 @@ export type InsertDeviceCveMatch = typeof deviceCveMatches.$inferInsert;
 export const ingestionRuns = mysqlTable("ingestion_runs", {
   id: int("id").autoincrement().primaryKey(),
   source: mysqlEnum("source", ["nvd", "cisa_kev", "full_sync"]).notNull(),
-  status: mysqlEnum("status", ["running", "completed", "failed"]).default("running").notNull(),
+  status: mysqlEnum("status", ["running", "completed", "failed"])
+    .default("running")
+    .notNull(),
   cvesFetched: int("cvesFetched").default(0).notNull(),
   cvesInserted: int("cvesInserted").default(0).notNull(),
   cvesUpdated: int("cvesUpdated").default(0).notNull(),
@@ -272,3 +311,19 @@ export const ingestionRuns = mysqlTable("ingestion_runs", {
 });
 export type IngestionRun = typeof ingestionRuns.$inferSelect;
 export type InsertIngestionRun = typeof ingestionRuns.$inferInsert;
+
+// ─── Sessions ─────────────────────────────────────────────────────────────────
+// Explicit server-side sessions for hardened auth (rotation + revocation).
+export const sessions = mysqlTable("sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  userId: int("userId").notNull(),
+  openId: varchar("openId", { length: 64 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  revokedAt: timestamp("revokedAt"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+});
+export type Session = typeof sessions.$inferSelect;
+export type InsertSession = typeof sessions.$inferInsert;

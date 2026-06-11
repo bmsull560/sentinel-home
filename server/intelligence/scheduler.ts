@@ -13,7 +13,10 @@
  */
 
 import { schedule, type ScheduledTask } from "node-cron";
-import { runIngestionPipeline, type IngestionResult } from "./ingestionPipeline";
+import {
+  runIngestionPipeline,
+  type IngestionResult,
+} from "./ingestionPipeline";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -97,9 +100,7 @@ async function executeIngestion(): Promise<void> {
         `alerts: ${result.alertsGenerated}, ` +
         `duration: ${(result.durationMs / 1000).toFixed(1)}s`
     );
-    console.log(
-      `[Scheduler] ⏰ Next run at ${state.nextRunAt.toISOString()}`
-    );
+    console.log(`[Scheduler] ⏰ Next run at ${state.nextRunAt.toISOString()}`);
   } catch (err) {
     state.totalErrors++;
     const message = err instanceof Error ? err.message : String(err);

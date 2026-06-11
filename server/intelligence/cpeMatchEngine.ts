@@ -32,42 +32,42 @@ import type { NvdCveItem, AffectedVendor } from "./nvdClient";
 // Maps common user-facing brand names to their CPE vendor strings.
 // Extend this as new device categories are added.
 const VENDOR_ALIASES: Record<string, string[]> = {
-  ring:       ["ring", "amazon_ring", "amazon"],
-  google:     ["google", "nest", "google_nest"],
-  apple:      ["apple"],
-  samsung:    ["samsung", "samsung_electronics"],
-  lg:         ["lg", "lg_electronics"],
-  sony:       ["sony"],
-  philips:    ["philips", "philips_hue", "signify"],
-  tp_link:    ["tp-link", "tp_link", "tplink"],
-  netgear:    ["netgear"],
-  asus:       ["asus", "asustek"],
-  linksys:    ["linksys", "belkin"],
-  d_link:     ["d-link", "d_link", "dlink"],
-  ubiquiti:   ["ubiquiti", "ubnt", "ui"],
-  hikvision:  ["hikvision"],
-  dahua:      ["dahua"],
-  wyze:       ["wyze", "wyze_labs"],
-  arlo:       ["arlo", "arlo_technologies"],
-  eufy:       ["eufy", "anker", "anker_innovations"],
-  ecobee:     ["ecobee"],
-  honeywell:  ["honeywell", "resideo"],
-  bosch:      ["bosch"],
-  siemens:    ["siemens"],
-  cisco:      ["cisco"],
-  fortinet:   ["fortinet"],
-  palo_alto:  ["palo_alto_networks", "paloalto"],
-  microsoft:  ["microsoft"],
-  intel:      ["intel"],
-  qualcomm:   ["qualcomm"],
-  broadcom:   ["broadcom"],
-  realtek:    ["realtek"],
-  mediatek:   ["mediatek"],
-  fitbit:     ["fitbit", "google"],
-  garmin:     ["garmin"],
-  withings:   ["withings"],
-  dexcom:     ["dexcom"],
-  abbott:     ["abbott", "abbottlaboratories"],
+  ring: ["ring", "amazon_ring", "amazon"],
+  google: ["google", "nest", "google_nest"],
+  apple: ["apple"],
+  samsung: ["samsung", "samsung_electronics"],
+  lg: ["lg", "lg_electronics"],
+  sony: ["sony"],
+  philips: ["philips", "philips_hue", "signify"],
+  tp_link: ["tp-link", "tp_link", "tplink"],
+  netgear: ["netgear"],
+  asus: ["asus", "asustek"],
+  linksys: ["linksys", "belkin"],
+  d_link: ["d-link", "d_link", "dlink"],
+  ubiquiti: ["ubiquiti", "ubnt", "ui"],
+  hikvision: ["hikvision"],
+  dahua: ["dahua"],
+  wyze: ["wyze", "wyze_labs"],
+  arlo: ["arlo", "arlo_technologies"],
+  eufy: ["eufy", "anker", "anker_innovations"],
+  ecobee: ["ecobee"],
+  honeywell: ["honeywell", "resideo"],
+  bosch: ["bosch"],
+  siemens: ["siemens"],
+  cisco: ["cisco"],
+  fortinet: ["fortinet"],
+  palo_alto: ["palo_alto_networks", "paloalto"],
+  microsoft: ["microsoft"],
+  intel: ["intel"],
+  qualcomm: ["qualcomm"],
+  broadcom: ["broadcom"],
+  realtek: ["realtek"],
+  mediatek: ["mediatek"],
+  fitbit: ["fitbit", "google"],
+  garmin: ["garmin"],
+  withings: ["withings"],
+  dexcom: ["dexcom"],
+  abbott: ["abbott", "abbottlaboratories"],
 };
 
 // ─── Normalization Utilities ──────────────────────────────────────────────────
@@ -124,9 +124,10 @@ function levenshtein(a: string, b: string): number {
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      dp[i][j] =
+        a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
     }
   }
 
@@ -173,11 +174,11 @@ export function calculateSentinelRiskScore(params: {
   const cvss = parseFloat(params.cvssScore ?? "0");
   let score = isNaN(cvss) ? 0 : cvss * 10; // 0–100 base
 
-  if (params.isKev)                                    score += 50;
-  if (params.exploitAvailable)                         score += 25;
-  if (!params.patchAvailable)                          score += 20;
-  if (params.attackVector === "NETWORK")               score += 15;
-  if (params.userInteraction === "NONE")               score += 10;
+  if (params.isKev) score += 50;
+  if (params.exploitAvailable) score += 25;
+  if (!params.patchAvailable) score += 20;
+  if (params.attackVector === "NETWORK") score += 15;
+  if (params.userInteraction === "NONE") score += 10;
 
   return Math.min(Math.round(score), 100);
 }
@@ -201,7 +202,15 @@ export function sentinelRiskToSeverity(
  */
 export function matchCveToDevices(
   cve: NvdCveItem,
-  devices: Pick<Device, "id" | "orgId" | "manufacturer" | "model" | "matchedCpeVendor" | "matchedCpeProduct">[],
+  devices: Pick<
+    Device,
+    | "id"
+    | "orgId"
+    | "manufacturer"
+    | "model"
+    | "matchedCpeVendor"
+    | "matchedCpeProduct"
+  >[],
   isKev: boolean = false
 ): DeviceMatchResult[] {
   const results: DeviceMatchResult[] = [];
@@ -220,7 +229,15 @@ export function matchCveToDevices(
  * Returns the best match or null if no match found.
  */
 export function matchDeviceToCve(
-  device: Pick<Device, "id" | "orgId" | "manufacturer" | "model" | "matchedCpeVendor" | "matchedCpeProduct">,
+  device: Pick<
+    Device,
+    | "id"
+    | "orgId"
+    | "manufacturer"
+    | "model"
+    | "matchedCpeVendor"
+    | "matchedCpeProduct"
+  >,
   cve: NvdCveItem,
   isKev: boolean = false
 ): DeviceMatchResult | null {
@@ -279,7 +296,7 @@ export function matchDeviceToCve(
       // Check vendor match (any alias)
       const vendorMatch = deviceVendorAliases.some(alias => {
         const sim = similarity(normalizeName(alias), cpeVendor);
-        return sim >= 0.80;
+        return sim >= 0.8;
       });
 
       if (!vendorMatch) continue;
@@ -289,7 +306,10 @@ export function matchDeviceToCve(
       if (deviceProduct && cpeProduct !== "*") {
         productSim = similarity(deviceProduct, cpeProduct);
         // Also check if device product contains CPE product as substring
-        if (deviceProduct.includes(cpeProduct) || cpeProduct.includes(deviceProduct)) {
+        if (
+          deviceProduct.includes(cpeProduct) ||
+          cpeProduct.includes(deviceProduct)
+        ) {
           productSim = Math.max(productSim, 0.85);
         }
       }
@@ -302,7 +322,7 @@ export function matchDeviceToCve(
       }
     }
 
-    if (bestFuzzyScore >= 0.80) {
+    if (bestFuzzyScore >= 0.8) {
       const confidenceScore = Math.round(70 + bestFuzzyScore * 20); // 70–90
       return {
         deviceId: device.id,
@@ -337,8 +357,8 @@ export function matchDeviceToCve(
       if (deviceProduct && cpeProduct !== "*") {
         // Split model into words and check if any word appears in CPE product
         const modelWords = deviceProduct.split("_").filter(w => w.length > 2);
-        const productKeywordMatch = modelWords.some(word =>
-          cpeProduct.includes(word) || word.includes(cpeProduct)
+        const productKeywordMatch = modelWords.some(
+          word => cpeProduct.includes(word) || word.includes(cpeProduct)
         );
 
         if (productKeywordMatch) {

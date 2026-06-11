@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { ENV } from "./_core/env";
@@ -15,19 +16,40 @@ import {
 } from "./intelligence/ingestionPipeline";
 import { fetchNvdCveById } from "./intelligence/nvdClient";
 import { getSchedulerState } from "./intelligence/scheduler";
-import { nvdCveCache, kevCatalog, deviceCveMatches, ingestionRuns } from "../drizzle/schema";
+import {
+  nvdCveCache,
+  kevCatalog,
+  deviceCveMatches,
+  ingestionRuns,
+} from "../drizzle/schema";
 import { eq, desc, sql, and, like } from "drizzle-orm";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-async function requireOrgAccess(userId: number, orgId: number, minRole?: "admin" | "owner") {
+async function requireOrgAccess(
+  userId: number,
+  orgId: number,
+  minRole?: "admin" | "owner"
+) {
   if (ENV.devBypassAuth) {
     return "owner" as const;
   }
 
   const role = await db.getUserOrgRole(orgId, userId);
-  if (!role) throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this organization" });
-  if (minRole === "owner" && role !== "owner") throw new TRPCError({ code: "FORBIDDEN", message: "Owner access required" });
-  if (minRole === "admin" && role === "viewer") throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+  if (!role)
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Not a member of this organization",
+    });
+  if (minRole === "owner" && role !== "owner")
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Owner access required",
+    });
+  if (minRole === "admin" && role === "viewer")
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Admin access required",
+    });
   return role;
 }
 
@@ -37,7 +59,23 @@ export const appRouter = router({
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
+    logout: publicProcedure.mutation(async ({ ctx }) => {
+      // Revoke server-side session if present
+      const cookieHeader = ctx.req.headers.cookie;
+      if (cookieHeader) {
+        const { parse: parseCookie } = await import("cookie");
+        const cookies = parseCookie(cookieHeader);
+        const rawToken = cookies[COOKIE_NAME];
+        if (rawToken) {
+          const { createHash } = await import("node:crypto");
+          const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+          const session = await db.getSessionByToken(tokenHash);
+          if (session) {
+            await db.revokeSession(session.id);
+          }
+        }
+      }
+
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
@@ -51,13 +89,23 @@ export const appRouter = router({
     }),
 
     create: protectedProcedure
-      .input(z.object({
-        name: z.string().min(2).max(100),
-        slug: z.string().min(2).max(64).regex(/^[a-z0-9-]+$/),
-      }))
+      .input(
+        z.object({
+          name: z.string().min(2).max(100),
+          slug: z
+            .string()
+            .min(2)
+            .max(64)
+            .regex(/^[a-z0-9-]+$/),
+        })
+      )
       .mutation(async ({ ctx, input }) => {
         const existing = await db.getOrgBySlug(input.slug);
-        if (existing) throw new TRPCError({ code: "CONFLICT", message: "Slug already taken" });
+        if (existing)
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Slug already taken",
+          });
         const org = await db.createOrg({ name: input.name, slug: input.slug });
         await db.addOrgMember(org.id, ctx.user.id, "owner");
         return org;
@@ -71,11 +119,13 @@ export const appRouter = router({
       }),
 
     update: protectedProcedure
-      .input(z.object({
-        orgId: z.number(),
-        name: z.string().optional(),
-        billingEmail: z.string().email().optional(),
-      }))
+      .input(
+        z.object({
+          orgId: z.number(),
+          name: z.string().optional(),
+          billingEmail: z.string().email().optional(),
+        })
+      )
       .mutation(async ({ ctx, input }) => {
         await requireOrgAccess(ctx.user.id, input.orgId, "admin");
         const { orgId, ...updates } = input;
@@ -94,11 +144,13 @@ export const appRouter = router({
       }),
 
     updateRole: protectedProcedure
-      .input(z.object({
-        orgId: z.number(),
-        userId: z.number(),
-        role: z.enum(["admin", "viewer"]),
-      }))
+      .input(
+        z.object({
+          orgId: z.number(),
+          userId: z.number(),
+          role: z.enum(["admin", "viewer"]),
+        })
+      )
       .mutation(async ({ ctx, input }) => {
         await requireOrgAccess(ctx.user.id, input.orgId, "admin");
         await db.updateOrgMemberRole(input.orgId, input.userId, input.role);
@@ -125,10 +177,16 @@ export const appRouter = router({
           db.getOrgAlerts(input.orgId),
           db.getOrgVulnerabilities(input.orgId),
         ]);
-        const urgentAlerts = alts.filter(a => a.status === "unread" && a.severity === "critical").length;
+        const urgentAlerts = alts.filter(
+          a => a.status === "unread" && a.severity === "critical"
+        ).length;
         const secureDevices = devs.filter(d => d.status === "secure").length;
-        const atRiskDevices = devs.filter(d => d.status === "at_risk" || d.status === "critical").length;
-        const criticalVulns = vulns.filter(v => v.severity === "immediate_attention").length;
+        const atRiskDevices = devs.filter(
+          d => d.status === "at_risk" || d.status === "critical"
+        ).length;
+        const criticalVulns = vulns.filter(
+          v => v.severity === "immediate_attention"
+        ).length;
         return {
           urgentAlerts,
           totalVulnerabilities: vulns.length,
@@ -157,31 +215,47 @@ export const appRouter = router({
       .query(async ({ input }) => db.getDeviceById(input.id)),
 
     create: protectedProcedure
-      .input(z.object({
-        orgId: z.number(),
-        name: z.string(),
-        category: z.enum(["smart_home", "iot", "mobile", "laptop", "router", "automotive", "health", "child_pet", "other"]),
-        manufacturer: z.string().optional(),
-        model: z.string().optional(),
-        firmwareVersion: z.string().optional(),
-        ipAddress: z.string().optional(),
-        macAddress: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          orgId: z.number(),
+          name: z.string(),
+          category: z.enum([
+            "smart_home",
+            "iot",
+            "mobile",
+            "laptop",
+            "router",
+            "automotive",
+            "health",
+            "child_pet",
+            "other",
+          ]),
+          manufacturer: z.string().optional(),
+          model: z.string().optional(),
+          firmwareVersion: z.string().optional(),
+          ipAddress: z.string().optional(),
+          macAddress: z.string().optional(),
+        })
+      )
       .mutation(async ({ ctx, input }) => {
         await requireOrgAccess(ctx.user.id, input.orgId, "admin");
         return db.createDevice(input);
       }),
 
     update: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        name: z.string().optional(),
-        manufacturer: z.string().optional(),
-        model: z.string().optional(),
-        firmwareVersion: z.string().optional(),
-        status: z.enum(["secure", "at_risk", "critical", "unknown"]).optional(),
-        notes: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          manufacturer: z.string().optional(),
+          model: z.string().optional(),
+          firmwareVersion: z.string().optional(),
+          status: z
+            .enum(["secure", "at_risk", "critical", "unknown"])
+            .optional(),
+          notes: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { id, ...updates } = input;
         await db.updateDevice(id, updates);
@@ -210,23 +284,33 @@ export const appRouter = router({
       .query(async ({ input }) => db.getVulnerabilityById(input.id)),
 
     updateStatus: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        status: z.enum(["open", "acknowledged", "resolved", "wont_fix"]),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.enum(["open", "acknowledged", "resolved", "wont_fix"]),
+        })
+      )
       .mutation(async ({ input }) => {
         await db.updateVulnerability(input.id, { status: input.status });
         return { success: true };
       }),
 
     explain: protectedProcedure
-      .input(z.object({
-        vulnerabilityId: z.number(),
-        technicalLevel: z.enum(["simple", "moderate", "technical"]).default("simple"),
-      }))
+      .input(
+        z.object({
+          vulnerabilityId: z.number(),
+          technicalLevel: z
+            .enum(["simple", "moderate", "technical"])
+            .default("simple"),
+        })
+      )
       .mutation(async ({ input }) => {
         const vuln = await db.getVulnerabilityById(input.vulnerabilityId);
-        if (!vuln) throw new TRPCError({ code: "NOT_FOUND", message: "Vulnerability not found" });
+        if (!vuln)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Vulnerability not found",
+          });
 
         const systemPrompt = `You are a calm, empowering security expert named Sentinel. Explain vulnerabilities in a way that is:
 - Clear and honest, but never alarming
@@ -246,12 +330,20 @@ End with a reassuring closing sentence.`;
         const response = await invokeLLM({
           messages: [
             { role: "system" as const, content: systemPrompt as string },
-            { role: "user" as const, content: `Explain this vulnerability:\n\nTitle: ${vuln.title}\nDescription: ${vuln.description || "N/A"}\nSeverity: ${vuln.severity}\nCVE: ${vuln.cveId || "N/A"}\nCVSS Score: ${vuln.cvssScore || "N/A"}` as string },
+            {
+              role: "user" as const,
+              content:
+                `Explain this vulnerability:\n\nTitle: ${vuln.title}\nDescription: ${vuln.description || "N/A"}\nSeverity: ${vuln.severity}\nCVE: ${vuln.cveId || "N/A"}\nCVSS Score: ${vuln.cvssScore || "N/A"}` as string,
+            },
           ],
         });
 
-        const explanation = (response.choices[0]?.message?.content as string) || "Unable to generate explanation at this time.";
-        await db.updateVulnerability(input.vulnerabilityId, { aiExplanation: explanation });
+        const explanation =
+          (response.choices[0]?.message?.content as string) ||
+          "Unable to generate explanation at this time.";
+        await db.updateVulnerability(input.vulnerabilityId, {
+          aiExplanation: explanation,
+        });
         return { explanation };
       }),
   }),
@@ -266,14 +358,18 @@ End with a reassuring closing sentence.`;
       }),
 
     updateStatus: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        status: z.enum(["unread", "read", "acknowledged", "dismissed"]),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.enum(["unread", "read", "acknowledged", "dismissed"]),
+        })
+      )
       .mutation(async ({ ctx, input }) => {
         await db.updateAlert(input.id, {
           status: input.status,
-          ...(input.status === "acknowledged" ? { acknowledgedBy: ctx.user.id, acknowledgedAt: new Date() } : {}),
+          ...(input.status === "acknowledged"
+            ? { acknowledgedBy: ctx.user.id, acknowledgedAt: new Date() }
+            : {}),
         });
         return { success: true };
       }),
@@ -289,10 +385,12 @@ End with a reassuring closing sentence.`;
       }),
 
     trigger: protectedProcedure
-      .input(z.object({
-        orgId: z.number(),
-        intent: z.string().min(5).max(1000),
-      }))
+      .input(
+        z.object({
+          orgId: z.number(),
+          intent: z.string().min(5).max(1000),
+        })
+      )
       .mutation(async ({ ctx, input }) => {
         await requireOrgAccess(ctx.user.id, input.orgId);
         const run = await db.createAgentRun({
@@ -306,12 +404,36 @@ End with a reassuring closing sentence.`;
         const startTime = Date.now();
         try {
           const agentTrace = [
-            { agent: "Orchestrator", action: "Parsing user intent", timestamp: new Date().toISOString() },
-            { agent: "Mapper", action: "Identifying relevant devices and CVEs", timestamp: new Date().toISOString() },
-            { agent: "Explainer", action: "Generating technical-but-safe description", timestamp: new Date().toISOString() },
-            { agent: "Sculptor", action: "Preparing UI experience", timestamp: new Date().toISOString() },
-            { agent: "Narrator", action: "Creating human-centric summary", timestamp: new Date().toISOString() },
-            { agent: "Guardian", action: "Performing ethical/safety pass", timestamp: new Date().toISOString() },
+            {
+              agent: "Orchestrator",
+              action: "Parsing user intent",
+              timestamp: new Date().toISOString(),
+            },
+            {
+              agent: "Mapper",
+              action: "Identifying relevant devices and CVEs",
+              timestamp: new Date().toISOString(),
+            },
+            {
+              agent: "Explainer",
+              action: "Generating technical-but-safe description",
+              timestamp: new Date().toISOString(),
+            },
+            {
+              agent: "Sculptor",
+              action: "Preparing UI experience",
+              timestamp: new Date().toISOString(),
+            },
+            {
+              agent: "Narrator",
+              action: "Creating human-centric summary",
+              timestamp: new Date().toISOString(),
+            },
+            {
+              agent: "Guardian",
+              action: "Performing ethical/safety pass",
+              timestamp: new Date().toISOString(),
+            },
           ];
 
           const response = await invokeLLM({
@@ -336,7 +458,9 @@ Respond in a calm, empowering, non-alarming tone. Structure your response as:
             ],
           });
 
-          const result = (response.choices[0]?.message?.content as string) || "Agent run completed.";
+          const result =
+            (response.choices[0]?.message?.content as string) ||
+            "Agent run completed.";
           const durationMs = Date.now() - startTime;
 
           await db.updateAgentRun(run.id, {
@@ -350,8 +474,14 @@ Respond in a calm, empowering, non-alarming tone. Structure your response as:
 
           return { runId: run.id, result, agentTrace };
         } catch (err) {
-          await db.updateAgentRun(run.id, { status: "failed", completedAt: new Date() });
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Agent run failed" });
+          await db.updateAgentRun(run.id, {
+            status: "failed",
+            completedAt: new Date(),
+          });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Agent run failed",
+          });
         }
       }),
   }),
@@ -372,8 +502,7 @@ Respond in a calm, empowering, non-alarming tone. Structure your response as:
         await requireOrgAccess(ctx.user.id, input.orgId, "admin");
         const rawKey = `sk_${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
         const prefix = rawKey.slice(0, 12);
-        // In production use crypto.createHash('sha256')
-        const keyHash = Buffer.from(rawKey).toString("base64");
+        const keyHash = createHash("sha256").update(rawKey).digest("hex");
         await db.createApiKey({
           orgId: input.orgId,
           name: input.name,
@@ -404,18 +533,19 @@ Respond in a calm, empowering, non-alarming tone. Structure your response as:
       }),
 
     // Get last ingestion date
-    lastIngestion: protectedProcedure
-      .query(async () => {
-        return getLastIngestionDate();
-      }),
+    lastIngestion: protectedProcedure.query(async () => {
+      return getLastIngestionDate();
+    }),
 
     // Trigger a new ingestion run (admin only)
     triggerIngestion: protectedProcedure
-      .input(z.object({
-        orgId: z.number(),
-        mode: z.enum(["recent", "incremental"]).default("recent"),
-        daysBack: z.number().min(1).max(30).default(7),
-      }))
+      .input(
+        z.object({
+          orgId: z.number(),
+          mode: z.enum(["recent", "incremental"]).default("recent"),
+          daysBack: z.number().min(1).max(30).default(7),
+        })
+      )
       .mutation(async ({ ctx, input }) => {
         await requireOrgAccess(ctx.user.id, input.orgId, "admin");
         // Run in background — don't await
@@ -428,7 +558,10 @@ Respond in a calm, empowering, non-alarming tone. Structure your response as:
             console.log(`[Ingestion] ${stage}: ${detail}`);
           },
         }).catch(err => console.error("[Ingestion] Pipeline failed:", err));
-        return { started: true, message: `Ingestion started (${input.mode}, last ${input.daysBack} days)` };
+        return {
+          started: true,
+          message: `Ingestion started (${input.mode}, last ${input.daysBack} days)`,
+        };
       }),
 
     // Get CVE matches for an org
@@ -441,10 +574,12 @@ Respond in a calm, empowering, non-alarming tone. Structure your response as:
 
     // Search NVD cache by keyword
     searchCves: protectedProcedure
-      .input(z.object({
-        query: z.string().min(2),
-        limit: z.number().min(1).max(50).default(20),
-      }))
+      .input(
+        z.object({
+          query: z.string().min(2),
+          limit: z.number().min(1).max(50).default(20),
+        })
+      )
       .query(async ({ ctx, input }) => {
         const dbConn = await db.getDb();
         if (!dbConn) return [];
@@ -459,26 +594,29 @@ Respond in a calm, empowering, non-alarming tone. Structure your response as:
             nvdPublishedAt: nvdCveCache.nvdPublishedAt,
           })
           .from(nvdCveCache)
-          .where(sql`${nvdCveCache.description} LIKE ${`%${input.query}%`} OR ${nvdCveCache.cveId} LIKE ${`%${input.query}%`}`)
+          .where(
+            sql`${nvdCveCache.description} LIKE ${`%${input.query}%`} OR ${nvdCveCache.cveId} LIKE ${`%${input.query}%`}`
+          )
           .orderBy(desc(nvdCveCache.nvdPublishedAt))
           .limit(input.limit);
       }),
 
     // Get KEV catalog stats
-    kevStats: protectedProcedure
-      .query(async () => {
-        const dbConn = await db.getDb();
-        if (!dbConn) return { total: 0, withRansomware: 0, recentlyAdded: 0 };
-        const [total] = await dbConn.select({ count: sql<number>`count(*)` }).from(kevCatalog);
-        const [withRansomware] = await dbConn
-          .select({ count: sql<number>`count(*)` })
-          .from(kevCatalog)
-          .where(eq(kevCatalog.knownRansomwareCampaignUse, "Known"));
-        return {
-          total: total?.count ?? 0,
-          withRansomware: withRansomware?.count ?? 0,
-        };
-      }),
+    kevStats: protectedProcedure.query(async () => {
+      const dbConn = await db.getDb();
+      if (!dbConn) return { total: 0, withRansomware: 0, recentlyAdded: 0 };
+      const [total] = await dbConn
+        .select({ count: sql<number>`count(*)` })
+        .from(kevCatalog);
+      const [withRansomware] = await dbConn
+        .select({ count: sql<number>`count(*)` })
+        .from(kevCatalog)
+        .where(eq(kevCatalog.knownRansomwareCampaignUse, "Known"));
+      return {
+        total: total?.count ?? 0,
+        withRansomware: withRansomware?.count ?? 0,
+      };
+    }),
 
     // Get a single CVE detail (from cache or live NVD)
     getCve: protectedProcedure
@@ -498,29 +636,28 @@ Respond in a calm, empowering, non-alarming tone. Structure your response as:
       }),
 
     // Get live scheduler state (next run, last run, run counts)
-    schedulerStatus: protectedProcedure
-      .query(() => {
-        const s = getSchedulerState();
-        return {
-          isRunning: s.isRunning,
-          lastRunAt: s.lastRunAt,
-          lastRunError: s.lastRunError,
-          nextRunAt: s.nextRunAt,
-          totalRuns: s.totalRuns,
-          totalErrors: s.totalErrors,
-          startedAt: s.startedAt,
-          lastResult: s.lastRunResult
-            ? {
-                cvesFetched: s.lastRunResult.cvesFetched,
-                cvesInserted: s.lastRunResult.cvesInserted,
-                cvesUpdated: s.lastRunResult.cvesUpdated,
-                matchesCreated: s.lastRunResult.matchesCreated,
-                alertsGenerated: s.lastRunResult.alertsGenerated,
-                durationMs: s.lastRunResult.durationMs,
-              }
-            : null,
-        };
-      }),
+    schedulerStatus: protectedProcedure.query(() => {
+      const s = getSchedulerState();
+      return {
+        isRunning: s.isRunning,
+        lastRunAt: s.lastRunAt,
+        lastRunError: s.lastRunError,
+        nextRunAt: s.nextRunAt,
+        totalRuns: s.totalRuns,
+        totalErrors: s.totalErrors,
+        startedAt: s.startedAt,
+        lastResult: s.lastRunResult
+          ? {
+              cvesFetched: s.lastRunResult.cvesFetched,
+              cvesInserted: s.lastRunResult.cvesInserted,
+              cvesUpdated: s.lastRunResult.cvesUpdated,
+              matchesCreated: s.lastRunResult.matchesCreated,
+              alertsGenerated: s.lastRunResult.alertsGenerated,
+              durationMs: s.lastRunResult.durationMs,
+            }
+          : null,
+      };
+    }),
   }),
 
   billing: router({

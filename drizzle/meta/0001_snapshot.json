@@ -72,9 +72,7 @@
       "compositePrimaryKeys": {
         "actionPlans_id": {
           "name": "actionPlans_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -149,9 +147,7 @@
       "compositePrimaryKeys": {
         "alerts_id": {
           "name": "alerts_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -248,9 +244,7 @@
       "compositePrimaryKeys": {
         "devices_id": {
           "name": "devices_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -323,9 +317,7 @@
       "compositePrimaryKeys": {
         "notifications_id": {
           "name": "notifications_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -408,17 +400,13 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "users_openId_unique": {
           "name": "users_openId_unique",
-          "columns": [
-            "openId"
-          ]
+          "columns": ["openId"]
         }
       },
       "checkConstraint": {}
@@ -520,9 +508,7 @@
       "compositePrimaryKeys": {
         "vulnerabilities_id": {
           "name": "vulnerabilities_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},

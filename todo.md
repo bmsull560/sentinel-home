@@ -1,12 +1,14 @@
 # Sentinel Home - Project TODO
 
 ## Phase 1: Database Schema & Planning
+
 - [x] Design database schema for devices, vulnerabilities, alerts, and notifications
 - [x] Implement device categories (smart home, IoT, mobile, laptops, routers, automotive, health, child/pet devices)
 - [x] Create severity tier system (Calm, Be Aware, Action Recommended, Immediate Attention)
 - [x] Set up database migrations
 
 ## Phase 2: Core Dashboard Interface
+
 - [x] Design beautiful, minimalist dashboard layout with calm color palette
 - [x] Implement overview page with key metrics (urgent alerts, total vulnerabilities, monitored devices, threat sources)
 - [x] Create data visualization components (time-series charts, donut charts for device status)
@@ -15,6 +17,7 @@
 - [x] Add responsive design for mobile and tablet
 
 ## Phase 3: Vulnerability Tracking & Intelligence
+
 - [x] Build vulnerability list view with filtering and sorting
 - [x] Create vulnerability detail cards with CVE information
 - [x] Implement severity classification and visual indicators
@@ -23,6 +26,7 @@
 - [x] Implement vulnerability search and filtering
 
 ## Phase 4: Device Management & Actions
+
 - [x] Build device inventory management interface
 - [x] Create device detail pages with firmware information
 - [x] Implement device categorization and grouping
@@ -32,6 +36,7 @@
 - [x] Add firmware update tracking and recommendations
 
 ## Phase 5: AI-Powered Features
+
 - [x] Integrate LLM for vulnerability explanations in plain language
 - [x] Implement Security Expert Agent for safe, responsible explanations
 - [x] Create Notification & Storytelling Agent for gentle nudges
@@ -40,6 +45,7 @@
 - [ ] Implement conversational AI for device security questions
 
 ## Phase 6: Testing & Quality Assurance
+
 - [x] Write vitest tests for all tRPC procedures
 - [x] Test device management workflows
 - [x] Test vulnerability tracking and alerts
@@ -48,12 +54,14 @@
 - [ ] Test accessibility features
 
 ## Phase 7: Deployment & Documentation
+
 - [ ] Create comprehensive user documentation
 - [ ] Add onboarding flow for new users
 - [x] Create checkpoint for deployment
 - [ ] Deploy to production
 
 ## UI Redesign (Reference: Aura Finance Dashboard)
+
 - [x] Update color palette to 3 colors max (soft purple/blue, light background, dark text)
 - [x] Implement soft gradient backgrounds
 - [x] Redesign metric cards with rounded corners and icon badges
@@ -64,12 +72,14 @@
 - [x] Update all pages (Overview, Alerts, Devices, Vulnerabilities) with new design
 
 ## Strict 3-Color Palette Update
+
 - [x] Update color system to use only black, white, and oklab(0.7 0.0260473 -0.147721 / 0.2) with 20% opacity
 - [x] Remove all purple, green, red, yellow color variations
 - [x] Update all badges, icons, and UI elements to use only the 3 specified colors
 - [x] Ensure proper contrast and readability with limited palette
 
 ## Enterprise SaaS UI Build
+
 - [x] Multi-tenant schema: orgs, members, roles, plans, api_keys
 - [x] Extend devices/vulnerabilities/alerts with org_id tenancy
 - [x] Push schema migrations
@@ -92,6 +102,7 @@
 - [x] Final checkpoint and delivery
 
 ## Sprint 2: NVD/CISA KEV Live Ingestion Pipeline
+
 - [x] Extend schema: nvd_cve_cache, kev_catalog, device_cve_matches, ingestion_runs tables
 - [x] NVD API v2 client: fetch CVEs by lastModified date range, paginate, normalize
 - [x] CISA KEV fetcher: pull JSON catalog, upsert into kev_catalog table
@@ -108,6 +119,7 @@
 - [x] Final checkpoint and delivery
 
 ## Sprint 3: Automated Ingestion Cron Job (COMPLETED)
+
 - [x] Read server entry point to find where to register cron
 - [x] Install node-cron package
 - [x] Create server/intelligence/scheduler.ts with 6-hour cron job

@@ -6,46 +6,166 @@ import type { TrpcContext } from "./_core/context";
 vi.mock("./db", () => ({
   getUserOrgRole: vi.fn().mockResolvedValue("owner"),
   getUserOrgs: vi.fn().mockResolvedValue([
-    { id: 1, name: "Test Org", slug: "test-org", plan: "free", planSeats: 3, planDevices: 10, billingEmail: null, createdAt: new Date() }
+    {
+      id: 1,
+      name: "Test Org",
+      slug: "test-org",
+      plan: "free",
+      planSeats: 3,
+      planDevices: 10,
+      billingEmail: null,
+      createdAt: new Date(),
+    },
   ]),
-  getOrgById: vi.fn().mockResolvedValue(
-    { id: 1, name: "Test Org", slug: "test-org", plan: "free", planSeats: 3, planDevices: 10, billingEmail: null, createdAt: new Date() }
-  ),
+  getOrgById: vi.fn().mockResolvedValue({
+    id: 1,
+    name: "Test Org",
+    slug: "test-org",
+    plan: "free",
+    planSeats: 3,
+    planDevices: 10,
+    billingEmail: null,
+    createdAt: new Date(),
+  }),
   getOrgBySlug: vi.fn().mockResolvedValue(null),
-  createOrg: vi.fn().mockResolvedValue({ id: 2, name: "New Org", slug: "new-org", plan: "free", planSeats: 1, planDevices: 3 }),
+  createOrg: vi.fn().mockResolvedValue({
+    id: 2,
+    name: "New Org",
+    slug: "new-org",
+    plan: "free",
+    planSeats: 1,
+    planDevices: 3,
+  }),
   addOrgMember: vi.fn().mockResolvedValue(undefined),
   updateOrg: vi.fn().mockResolvedValue(undefined),
-  getOrgMembers: vi.fn().mockResolvedValue([
-    { id: 1, orgId: 1, userId: 1, role: "owner", joinedAt: new Date() }
-  ]),
+  getOrgMembers: vi
+    .fn()
+    .mockResolvedValue([
+      { id: 1, orgId: 1, userId: 1, role: "owner", joinedAt: new Date() },
+    ]),
   updateOrgMemberRole: vi.fn().mockResolvedValue(undefined),
   removeOrgMember: vi.fn().mockResolvedValue(undefined),
   getOrgDevices: vi.fn().mockResolvedValue([
-    { id: 1, orgId: 1, name: "Ring Doorbell Pro 2", category: "smart_home", status: "at_risk", manufacturer: "Ring", model: "Pro 2", firmwareVersion: "1.2.3", createdAt: new Date(), updatedAt: new Date() },
-    { id: 2, orgId: 1, name: "Nest Cam Indoor", category: "smart_home", status: "secure", manufacturer: "Google", model: "Nest Cam", firmwareVersion: "2.0.0", createdAt: new Date(), updatedAt: new Date() },
+    {
+      id: 1,
+      orgId: 1,
+      name: "Ring Doorbell Pro 2",
+      category: "smart_home",
+      status: "at_risk",
+      manufacturer: "Ring",
+      model: "Pro 2",
+      firmwareVersion: "1.2.3",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: 2,
+      orgId: 1,
+      name: "Nest Cam Indoor",
+      category: "smart_home",
+      status: "secure",
+      manufacturer: "Google",
+      model: "Nest Cam",
+      firmwareVersion: "2.0.0",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
   ]),
   getOrgAlerts: vi.fn().mockResolvedValue([
-    { id: 1, orgId: 1, title: "Critical CVE detected on Ring Doorbell", severity: "critical", status: "unread", message: "CVE-2024-1234 affects your device.", createdAt: new Date() },
-    { id: 2, orgId: 1, title: "Firmware update available", severity: "warning", status: "read", message: "Update to patch known vulnerabilities.", createdAt: new Date() },
+    {
+      id: 1,
+      orgId: 1,
+      title: "Critical CVE detected on Ring Doorbell",
+      severity: "critical",
+      status: "unread",
+      message: "CVE-2024-1234 affects your device.",
+      createdAt: new Date(),
+    },
+    {
+      id: 2,
+      orgId: 1,
+      title: "Firmware update available",
+      severity: "warning",
+      status: "read",
+      message: "Update to patch known vulnerabilities.",
+      createdAt: new Date(),
+    },
   ]),
   getOrgVulnerabilities: vi.fn().mockResolvedValue([
-    { id: 1, orgId: 1, title: "Remote Code Execution in Ring Doorbell", severity: "immediate_attention", status: "open", isKev: true, patchAvailable: true, cveId: "CVE-2024-1234", cvssScore: "9.8", createdAt: new Date(), updatedAt: new Date() },
-    { id: 2, orgId: 1, title: "Information Disclosure in Nest Cam", severity: "be_aware", status: "acknowledged", isKev: false, patchAvailable: false, cveId: "CVE-2024-5678", cvssScore: "4.3", createdAt: new Date(), updatedAt: new Date() },
+    {
+      id: 1,
+      orgId: 1,
+      title: "Remote Code Execution in Ring Doorbell",
+      severity: "immediate_attention",
+      status: "open",
+      isKev: true,
+      patchAvailable: true,
+      cveId: "CVE-2024-1234",
+      cvssScore: "9.8",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: 2,
+      orgId: 1,
+      title: "Information Disclosure in Nest Cam",
+      severity: "be_aware",
+      status: "acknowledged",
+      isKev: false,
+      patchAvailable: false,
+      cveId: "CVE-2024-5678",
+      cvssScore: "4.3",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
   ]),
-  createDevice: vi.fn().mockImplementation(async (data: any) => ({ id: 99, ...data, status: "unknown", createdAt: new Date(), updatedAt: new Date() })),
+  createDevice: vi.fn().mockImplementation(async (data: any) => ({
+    id: 99,
+    ...data,
+    status: "unknown",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  })),
   updateDevice: vi.fn().mockResolvedValue(undefined),
   deleteDevice: vi.fn().mockResolvedValue(undefined),
   getVulnerabilityById: vi.fn().mockResolvedValue({
-    id: 1, orgId: 1, title: "Remote Code Execution in Ring Doorbell", description: "A critical RCE vulnerability affecting Ring Doorbell Pro 2 firmware versions below 1.3.0.",
-    severity: "immediate_attention", cveId: "CVE-2024-1234", cvssScore: "9.8", attackVector: "NETWORK",
-    userInteraction: "NONE", privilegesRequired: "NONE", status: "open", isKev: true, patchAvailable: true,
+    id: 1,
+    orgId: 1,
+    title: "Remote Code Execution in Ring Doorbell",
+    description:
+      "A critical RCE vulnerability affecting Ring Doorbell Pro 2 firmware versions below 1.3.0.",
+    severity: "immediate_attention",
+    cveId: "CVE-2024-1234",
+    cvssScore: "9.8",
+    attackVector: "NETWORK",
+    userInteraction: "NONE",
+    privilegesRequired: "NONE",
+    status: "open",
+    isKev: true,
+    patchAvailable: true,
   }),
   updateVulnerability: vi.fn().mockResolvedValue(undefined),
   updateAlert: vi.fn().mockResolvedValue(undefined),
   getOrgAgentRuns: vi.fn().mockResolvedValue([
-    { id: 1, orgId: 1, intent: "What are my critical vulnerabilities?", status: "completed", result: "You have 1 critical vulnerability.", durationMs: 2500, tokensUsed: 450, agentTrace: [], createdAt: new Date() }
+    {
+      id: 1,
+      orgId: 1,
+      intent: "What are my critical vulnerabilities?",
+      status: "completed",
+      result: "You have 1 critical vulnerability.",
+      durationMs: 2500,
+      tokensUsed: 450,
+      agentTrace: [],
+      createdAt: new Date(),
+    },
   ]),
-  createAgentRun: vi.fn().mockResolvedValue({ id: 2, orgId: 1, intent: "test intent", status: "running", createdAt: new Date() }),
+  createAgentRun: vi.fn().mockResolvedValue({
+    id: 2,
+    orgId: 1,
+    intent: "test intent",
+    status: "running",
+    createdAt: new Date(),
+  }),
   updateAgentRun: vi.fn().mockResolvedValue(undefined),
   upsertUser: vi.fn().mockResolvedValue(undefined),
   getUserByOpenId: vi.fn().mockResolvedValue(undefined),
@@ -53,11 +173,14 @@ vi.mock("./db", () => ({
 
 vi.mock("./_core/llm", () => ({
   invokeLLM: vi.fn().mockResolvedValue({
-    choices: [{
-      message: {
-        content: "This vulnerability allows a remote attacker to execute arbitrary code on your Ring Doorbell without any user interaction. Update your firmware immediately."
-      }
-    }]
+    choices: [
+      {
+        message: {
+          content:
+            "This vulnerability allows a remote attacker to execute arbitrary code on your Ring Doorbell without any user interaction. Update your firmware immediately.",
+        },
+      },
+    ],
   }),
 }));
 
@@ -94,7 +217,9 @@ describe("auth", () => {
     const caller = appRouter.createCaller(ctx);
     const result = await caller.auth.logout();
     expect(result.success).toBe(true);
-    expect((ctx.res.clearCookie as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+    expect(
+      (ctx.res.clearCookie as ReturnType<typeof vi.fn>).mock.calls.length
+    ).toBeGreaterThan(0);
   });
 });
 
@@ -125,9 +250,14 @@ describe("org", () => {
 
   it("rejects org creation when slug is already taken", async () => {
     const db = await import("./db");
-    vi.mocked(db.getOrgBySlug).mockResolvedValueOnce({ id: 99, slug: "taken" } as any);
+    vi.mocked(db.getOrgBySlug).mockResolvedValueOnce({
+      id: 99,
+      slug: "taken",
+    } as any);
     const caller = appRouter.createCaller(makeCtx());
-    await expect(caller.org.create({ name: "Taken", slug: "taken" })).rejects.toThrow();
+    await expect(
+      caller.org.create({ name: "Taken", slug: "taken" })
+    ).rejects.toThrow();
   });
 });
 
@@ -210,7 +340,10 @@ describe("vulnerabilities", () => {
 
   it("updates vulnerability status to acknowledged", async () => {
     const caller = appRouter.createCaller(makeCtx());
-    const result = await caller.vulnerabilities.updateStatus({ id: 1, status: "acknowledged" });
+    const result = await caller.vulnerabilities.updateStatus({
+      id: 1,
+      status: "acknowledged",
+    });
     expect(result.success).toBe(true);
   });
 
@@ -234,13 +367,19 @@ describe("alerts", () => {
 
   it("updates alert status to acknowledged", async () => {
     const caller = appRouter.createCaller(makeCtx());
-    const result = await caller.alerts.updateStatus({ id: 1, status: "acknowledged" });
+    const result = await caller.alerts.updateStatus({
+      id: 1,
+      status: "acknowledged",
+    });
     expect(result.success).toBe(true);
   });
 
   it("updates alert status to dismissed", async () => {
     const caller = appRouter.createCaller(makeCtx());
-    const result = await caller.alerts.updateStatus({ id: 1, status: "dismissed" });
+    const result = await caller.alerts.updateStatus({
+      id: 1,
+      status: "dismissed",
+    });
     expect(result.success).toBe(true);
   });
 });
