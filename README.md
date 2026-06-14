@@ -136,30 +136,6 @@ If these OAuth values are missing, the server can still start, but sign-in and c
 | `VITE_APP_TITLE` | Browser tab title (default: "Sentinel Home") |
 | `VITE_APP_LOGO`  | Favicon and app icon URL                     |
 
-### Optional: Web Analytics (Umami)
-
-Sentinel Home uses **[Umami](https://umami.is)** for privacy-first, cookie-free web analytics. Google Analytics is intentionally **not** used by default to align with the product's security and privacy positioning.
-
-The analytics script is **only injected** when both environment variables below are configured. If either is empty, no tracking code is loaded — this is the default for local development.
-
-| Variable                    | Description                                                                        |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| `VITE_ANALYTICS_ENDPOINT`   | Umami instance base URL (e.g. `https://cloud.umami.is` or your self-hosted domain) |
-| `VITE_ANALYTICS_WEBSITE_ID` | Umami website ID (UUID shown in your Umami site settings)                          |
-
-**To enable traffic tracking in production:**
-
-1. Create an account at [Umami Cloud](https://cloud.umami.is) or [self-host Umami](https://umami.is/docs/install).
-2. Add a new site and copy the **Website ID**.
-3. Set the two env vars in your production environment:
-   ```bash
-   VITE_ANALYTICS_ENDPOINT=https://cloud.umami.is
-   VITE_ANALYTICS_WEBSITE_ID=<your-umami-website-id>
-   ```
-4. Rebuild and deploy. The script is injected automatically at runtime — no code changes required.
-
-Umami collects only anonymized page views, referrers, devices, and geography. No cookies, no cross-site tracking, and no personal data is gathered.
-
 ## Project Layout
 
 - `client/` — React frontend application

@@ -30,26 +30,6 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-
-    <!-- Umami Analytics — only injected when both env vars are configured -->
-    <script>
-      (function () {
-        const endpoint = "%VITE_ANALYTICS_ENDPOINT%";
-        const websiteId = "%VITE_ANALYTICS_WEBSITE_ID%";
-        if (
-          endpoint &&
-          !endpoint.startsWith("%VITE_") &&
-          websiteId &&
-          !websiteId.startsWith("%VITE_")
-        ) {
-          const s = document.createElement("script");
-          s.defer = true;
-          s.src = endpoint + "/script.js";
-          s.setAttribute("data-website-id", websiteId);
-          document.head.appendChild(s);
-        }
-      })();
-    </script>
   </head>
 
   <body>
