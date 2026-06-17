@@ -154,7 +154,7 @@ async function startServer() {
 
   // Development: Vite dev middleware
   // Production: static files from dist/public/
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.VITE_DEV === "true") {
     await setupVite(app, server);
   } else {
     serveStatic(app);

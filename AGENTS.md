@@ -104,6 +104,16 @@ pnpm build
 # Start production server from dist/
 pnpm start
 
+# Environment-specific package builds
+pnpm build:dev   # outputs to dist/dev/
+pnpm build:test  # outputs to dist/test/
+pnpm build:prod  # outputs to dist/prod/
+
+# Start an environment-specific built package
+pnpm start:dev   # loads .env.dev
+pnpm start:test  # loads .env.test
+pnpm start:prod  # loads .env.prod
+
 # Type-check (no emit)
 pnpm check
 
