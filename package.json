@@ -128,7 +128,7 @@
     "add": "^2.0.6",
     "autoprefixer": "^10.5.2",
     "esbuild": "^0.28.1",
-    "pnpm": "^10.15.1",
+    "pnpm": "^11.11.0",
     "postcss": "^8.5.16",
     "prettier": "^3.9.5",
     "supertest": "^7.0.0",
