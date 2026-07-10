@@ -2,11 +2,11 @@ import AppShell, { useOrgId } from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
-  AlertTriangle,
+  TriangleAlert,
   Bell,
-  CheckCircle2,
+  CircleCheckBig,
   Clock,
-  XCircle,
+  CircleX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -19,7 +19,7 @@ const SEVERITY_CONFIG: Record<
     label: "Critical",
     bg: "bg-black",
     text: "text-white",
-    icon: AlertTriangle,
+    icon: TriangleAlert,
   },
   warning: {
     label: "Warning",
@@ -107,7 +107,7 @@ export default function Alerts() {
           </div>
         ) : !alerts?.length ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <CheckCircle2 className="w-12 h-12 text-black/15 mb-4" />
+            <CircleCheckBig className="w-12 h-12 text-black/15 mb-4" />
             <h3 className="font-semibold text-base mb-2">All clear</h3>
             <p className="text-sm text-black/40">
               No active security alerts at this time.
@@ -188,7 +188,7 @@ export default function Alerts() {
                           )}
                           {alert.status === "dismissed" && (
                             <span className="text-xs text-black/30 flex items-center gap-1">
-                              <XCircle className="w-3 h-3" /> Dismissed
+                              <CircleX className="w-3 h-3" /> Dismissed
                             </span>
                           )}
                         </div>
