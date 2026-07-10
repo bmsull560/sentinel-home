@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "repowise": {
+      "url": "https://api.repowise.dev/mcp/owner/repo",
+      "bearerTokenEnvVar": "REPOWISE_API_TOKEN"
+    }
+  }
+}

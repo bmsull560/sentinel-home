@@ -23,21 +23,24 @@ import {
   sessions,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { logger } from "./_core/logger";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
-  if (!_db && ENV.databaseUrl) {
+  // Allow tests and runtime to override DATABASE_URL after module load.
+  const databaseUrl = ENV.databaseUrl || process.env.DATABASE_URL || "";
+  if (!_db && databaseUrl) {
     try {
       const pool = createPool({
-        uri: ENV.databaseUrl,
+        uri: databaseUrl,
         connectionLimit: 10,
         ssl: ENV.isProduction ? { rejectUnauthorized: false } : undefined,
         enableKeepAlive: true,
       });
       _db = drizzle(pool as any);
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      logger.warn({ err: error }, "[Database] Failed to connect");
       _db = null;
     }
   }
@@ -66,7 +69,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
+    logger.warn("[Database] Cannot upsert user: database not available");
     return;
   }
 
@@ -102,7 +105,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       .values(values)
       .onDuplicateKeyUpdate({ set: updateSet });
   } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
+    logger.error({ err: error }, "[Database] Failed to upsert user");
     throw error;
   }
 }

@@ -8,6 +8,8 @@ import { nanoid } from "nanoid";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { ENV } from "./env";
+import { logger } from "./logger";
+import { withRetry } from "./retry";
 import type {
   ExchangeTokenRequest,
   ExchangeTokenResponse,
@@ -29,9 +31,9 @@ function hashToken(token: string): string {
 
 class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
-    console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
+    logger.info("[OAuth] Initialized with baseURL: %s", ENV.oAuthServerUrl);
     if (!ENV.oAuthServerUrl) {
-      console.error(
+      logger.error(
         "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
       );
     }
@@ -53,9 +55,10 @@ class OAuthService {
       redirectUri: this.decodeState(state),
     };
 
-    const { data } = await this.client.post<ExchangeTokenResponse>(
-      EXCHANGE_TOKEN_PATH,
-      payload
+    const { data } = await withRetry(
+      () =>
+        this.client.post<ExchangeTokenResponse>(EXCHANGE_TOKEN_PATH, payload),
+      { maxRetries: 2, baseDelayMs: 250, maxDelayMs: 5_000 }
     );
 
     return data;
@@ -64,11 +67,12 @@ class OAuthService {
   async getUserInfoByToken(
     token: ExchangeTokenResponse
   ): Promise<GetUserInfoResponse> {
-    const { data } = await this.client.post<GetUserInfoResponse>(
-      GET_USER_INFO_PATH,
-      {
-        accessToken: token.accessToken,
-      }
+    const { data } = await withRetry(
+      () =>
+        this.client.post<GetUserInfoResponse>(GET_USER_INFO_PATH, {
+          accessToken: token.accessToken,
+        }),
+      { maxRetries: 2, baseDelayMs: 250, maxDelayMs: 5_000 }
     );
 
     return data;
@@ -208,9 +212,13 @@ class SDKServer {
       projectId: ENV.appId,
     };
 
-    const { data } = await this.client.post<GetUserInfoWithJwtResponse>(
-      GET_USER_INFO_WITH_JWT_PATH,
-      payload
+    const { data } = await withRetry(
+      () =>
+        this.client.post<GetUserInfoWithJwtResponse>(
+          GET_USER_INFO_WITH_JWT_PATH,
+          payload
+        ),
+      { maxRetries: 2, baseDelayMs: 250, maxDelayMs: 5_000 }
     );
 
     const loginMethod = this.deriveLoginMethod(

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { notifyOwner } from "./notification";
 import { adminProcedure, publicProcedure, router } from "./trpc";
 import { getDb } from "../db";
+import { collectHealthStatus } from "./health";
 
 export const systemRouter = router({
   health: publicProcedure
@@ -11,13 +12,13 @@ export const systemRouter = router({
       })
     )
     .query(async () => {
-      // Verify database connectivity
-      const db = await getDb();
-      const dbHealthy = db !== null;
+      const health = await collectHealthStatus();
       return {
-        ok: dbHealthy,
-        db: dbHealthy ? "connected" : "unavailable",
-        timestamp: new Date().toISOString(),
+        ok: health.status === "ok",
+        db: health.db,
+        redis: health.redis,
+        scheduler: health.scheduler,
+        timestamp: health.timestamp,
       };
     }),
 

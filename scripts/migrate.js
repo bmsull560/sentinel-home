@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env node
 /**
  * Database Migration Runner
  *
@@ -11,10 +11,16 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
+const drizzleKitPath = path.join(
+  rootDir,
+  "node_modules",
+  ".bin",
+  "drizzle-kit"
+);
 
+console.log("[Migrate] Running database migrations...");
 try {
-  console.log("[Migrate] Running database migrations...");
-  execSync("drizzle-kit migrate", {
+  execSync(drizzleKitPath, {
     cwd: rootDir,
     stdio: "inherit",
     env: process.env,

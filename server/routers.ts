@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { ENV } from "./_core/env";
+import { logger } from "./_core/logger";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
@@ -16,6 +17,7 @@ import {
 } from "./intelligence/ingestionPipeline";
 import { fetchNvdCveById } from "./intelligence/nvdClient";
 import { getSchedulerState } from "./intelligence/scheduler";
+import { ingestionPipelineRunsTotal } from "./_core/metrics";
 import {
   nvdCveCache,
   kevCatalog,
@@ -555,9 +557,16 @@ Respond in a calm, empowering, non-alarming tone. Structure your response as:
           daysBack: input.daysBack,
           onProgress: (stage, detail) => {
             progressLog.push(`[${stage}] ${detail}`);
-            console.log(`[Ingestion] ${stage}: ${detail}`);
+            logger.info(`[Ingestion] ${stage}: ${detail}`);
           },
-        }).catch(err => console.error("[Ingestion] Pipeline failed:", err));
+        })
+          .then(() => {
+            ingestionPipelineRunsTotal.inc({ result: "success" });
+          })
+          .catch(err => {
+            logger.error({ err }, "[Ingestion] Pipeline failed");
+            ingestionPipelineRunsTotal.inc({ result: "failure" });
+          });
         return {
           started: true,
           message: `Ingestion started (${input.mode}, last ${input.daysBack} days)`,

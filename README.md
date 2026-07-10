@@ -53,9 +53,20 @@ Sentinel Home is a multi-tenant security dashboard for connected devices. It com
 
 3. **Run database migrations:**
 
+   Migration files live in `drizzle/migrations/`. Apply them with:
+
+   ```bash
+   pnpm db:migrate
+   ```
+
+   To generate a new migration after changing `drizzle/schema.ts`:
+
    ```bash
    pnpm db:push
    ```
+
+   The Docker image runs `pnpm db:migrate` automatically before starting the
+   server.
 
 4. **Start development mode:**
 
@@ -98,7 +109,8 @@ This single command checks:
 - `pnpm check` — Run TypeScript type-checking
 - `pnpm format` — Run Prettier formatting
 - `pnpm verify` — Run the full verification suite (setup, build, tests, security, production)
-- `pnpm db:push` — Generate and apply Drizzle migrations
+- `pnpm db:push` — Generate a new migration from `drizzle/schema.ts` and apply it
+- `pnpm db:migrate` — Apply committed migrations from `drizzle/migrations/`
 
 Environment-specific builds use Vite modes (`dev`, `test`, `prod`) and load the
 matching `.env.*` file at runtime. The original `pnpm build` / `pnpm start`
@@ -186,6 +198,21 @@ Run all tests:
 pnpm test
 ```
 
+Run integration tests against a real MySQL container:
+
+```bash
+pnpm test:integration
+```
+
+Run the end-to-end smoke test against the production bundle:
+
+```bash
+pnpm test:e2e
+```
+
+The E2E smoke test starts a MySQL container, builds the production bundle,
+starts the server, and verifies `/health` and `/metrics`.
+
 Type-check without emitting artifacts:
 
 ```bash
@@ -205,16 +232,61 @@ In production, static client assets are served by the backend.
 
 ## Docker
 
-Build and run with Docker:
+Build and run locally:
 
 ```bash
 docker build -t sentinel-home .
 docker run -p 3000:3000 --env-file .env sentinel-home
 ```
 
+### Local development with Docker Compose
+
+A `docker-compose.yml` is provided for local development. It starts the app,
+MySQL, and Redis with `DEV_BYPASS_AUTH=true` so you can test the UI without an
+OAuth provider.
+
+```bash
+docker compose up --build
+```
+
+The app is available at http://localhost:3000.
+
+### Production-like deployment with Docker Compose
+
+`docker-compose.prod.yml` runs the app with a production image, MySQL, and
+Redis. Create a `.env.prod` file with the required values (see `.env.example`)
+and deploy:
+
+```bash
+export APP_IMAGE=ghcr.io/<owner>/sentinel-home:v1.2.3
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+```
+
+### Deploying from GitHub Container Registry
+
+The `.github/workflows/docker-publish.yml` workflow builds and pushes images to
+`ghcr.io/<owner>/sentinel-home` on every push to `main` and every semver tag
+(`v*.*.*`).
+
+Pull and run the latest image:
+
+```bash
+docker pull ghcr.io/<owner>/sentinel-home:main
+docker run -d -p 3000:3000 --env-file .env --name sentinel-home ghcr.io/<owner>/sentinel-home:main
+```
+
+Replace `<owner>` with your GitHub user or organization name. For production,
+pin to a specific semantic version tag (e.g. `ghcr.io/<owner>/sentinel-home:1.2.3`)
+instead of `main`.
+
+See [`RELEASE.md`](RELEASE.md) for the full release, deployment, and rollback
+process.
+
 ## CI / GitHub Actions
 
 A GitHub Actions workflow is included at `.github/workflows/ci.yml`. It runs `pnpm verify` on every push and pull request to `main`.
+
+Dependabot is configured in `.github/dependabot.yml` to open weekly pull requests for npm/pnpm, Docker, and GitHub Actions updates.
 
 ## Security
 
@@ -226,10 +298,28 @@ A GitHub Actions workflow is included at `.github/workflows/ci.yml`. It runs `pn
 - Org access is enforced at the tRPC procedure level with role checks
 - `DEV_BYPASS_AUTH` must never be enabled in production
 - NVD API rate limits are respected (6.5s delay between pages when no API key)
+- CodeQL static analysis runs on every push/PR and weekly
 
-## Known Limitations
+## Monitoring
+
+The server exposes production metrics in Prometheus format:
+
+- `GET /health` — liveness/readiness probe; checks database connectivity
+- `GET /metrics` — Prometheus metrics (request counts/latency, scheduler runs,
+  ingestion pipeline runs, Node.js default metrics)
+
+Both endpoints are served outside the rate limiter so load balancers and
+scrapers can reach them without consuming quota.
+
+See [`RUNBOOKS.md`](RUNBOOKS.md) for the incident response checklist and
+monitoring quick reference.
 
 See [`LIMITATIONS.md`](LIMITATIONS.md) for a complete list of known non-blocking limitations, including testing strategy, external dependencies, and deployment trade-offs.
+
+## Performance & SLOs
+
+See [`PERFORMANCE.md`](PERFORMANCE.md) for service level objectives, resource
+expectations, scalability constraints, and load-testing instructions.
 
 ## Troubleshooting
 
@@ -241,6 +331,11 @@ See [`LIMITATIONS.md`](LIMITATIONS.md) for a complete list of known non-blocking
   - Verify `VITE_APP_ID`, `OAUTH_SERVER_URL`, and cookie/session secrets.
 - **Type errors after pulling updates:**
   - Run `pnpm install` to ensure dependencies match `pnpm-lock.yaml`.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for development workflow, code quality
+expectations, testing requirements, and release procedures.
 
 ## License
 

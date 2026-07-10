@@ -118,10 +118,11 @@ mysql -h $DB_HOST -u $DB_USER -p$DB_PASS sentinel_home < backup_YYYY-MM-DD.sql
 
 ## Monitoring Quick Reference
 
-| Endpoint                      | Purpose                    | Expected                        |
-| ----------------------------- | -------------------------- | ------------------------------- |
-| `GET /health`                 | Liveness + DB connectivity | `200 OK` with `{"status":"ok"}` |
-| `GET /api/trpc/system.health` | tRPC health (shallow)      | `{"ok":true}`                   |
+| Endpoint                      | Purpose                                     | Expected                                             |
+| ----------------------------- | ------------------------------------------- | ---------------------------------------------------- |
+| `GET /health`                 | Liveness/readiness + DB + Redis + scheduler | `200 OK` when healthy, `503` when degraded/unhealthy |
+| `GET /metrics`                | Prometheus metrics                          | `200 OK` with Prometheus text                        |
+| `GET /api/trpc/system.health` | tRPC health (shallow)                       | `{"ok":true}`                                        |
 
 ### Log Fields
 

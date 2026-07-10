@@ -247,6 +247,29 @@ if (fs.existsSync(path.join(rootDir, ".github", "workflows", "ci.yml"))) {
   warn("GitHub Actions CI workflow missing");
 }
 
+if (
+  fs.existsSync(
+    path.join(rootDir, ".github", "workflows", "docker-publish.yml")
+  )
+) {
+  pass("Docker publish workflow exists");
+} else {
+  warn("Docker publish workflow missing");
+}
+
+if (fs.existsSync(path.join(rootDir, ".github", "workflows", "codeql.yml"))) {
+  pass("CodeQL SAST workflow exists");
+} else {
+  warn("CodeQL SAST workflow missing");
+}
+
+// Dependabot
+if (fs.existsSync(path.join(rootDir, ".github", "dependabot.yml"))) {
+  pass("Dependabot configuration exists");
+} else {
+  warn("Dependabot configuration missing");
+}
+
 // ESLint config
 if (
   fs.existsSync(path.join(rootDir, "eslint.config.js")) ||
@@ -301,6 +324,51 @@ if (hasEnv) {
   warn("Skipping env validation — .env not found");
 }
 
+// Committed database migrations
+const migrationsDir = path.join(rootDir, "drizzle", "migrations");
+const migrationsMetaDir = path.join(migrationsDir, "meta");
+const hasMigrationsDir = fs.existsSync(migrationsDir);
+const hasMigrationsMetaDir = fs.existsSync(migrationsMetaDir);
+const migrationSqlFiles = hasMigrationsDir
+  ? fs
+      .readdirSync(migrationsDir)
+      .filter(f => f.endsWith(".sql") && !f.startsWith("."))
+  : [];
+const hasJournal = fs.existsSync(path.join(migrationsMetaDir, "_journal.json"));
+
+if (migrationSqlFiles.length > 0) {
+  pass(`Committed migrations: ${migrationSqlFiles.length} SQL file(s)`);
+} else {
+  fail("No committed SQL migrations found in drizzle/migrations/");
+}
+
+if (hasMigrationsMetaDir) {
+  pass("Migration metadata directory exists");
+} else {
+  fail("Migration metadata directory missing (drizzle/migrations/meta/)");
+}
+
+if (hasJournal) {
+  pass("Migration journal exists");
+} else {
+  fail("Migration journal missing (drizzle/migrations/meta/_journal.json)");
+}
+
+// Dockerfile hardening
+if (fs.existsSync(path.join(rootDir, "Dockerfile"))) {
+  const dockerfile = fs.readFileSync(path.join(rootDir, "Dockerfile"), "utf-8");
+  if (dockerfile.includes("USER ")) {
+    pass("Dockerfile runs as non-root user");
+  } else {
+    warn("Dockerfile does not set a non-root USER");
+  }
+  if (dockerfile.includes("COPY --from=builder")) {
+    pass("Dockerfile copies node_modules from builder stage");
+  } else {
+    warn("Dockerfile does not copy node_modules from builder stage");
+  }
+}
+
 // Security middleware presence
 const indexTs = fs.readFileSync(
   path.join(rootDir, "server", "_core", "index.ts"),
@@ -324,12 +392,80 @@ if (indexTs.includes("SIGTERM") || indexTs.includes("SIGINT")) {
   warn("graceful shutdown handlers not found");
 }
 
+if (
+  indexTs.includes('app.get("/metrics"') ||
+  indexTs.includes("app.get('/metrics'")
+) {
+  pass("Prometheus /metrics endpoint configured");
+} else {
+  warn("Prometheus /metrics endpoint not found");
+}
+
 // DB connection pooling
 const dbTs = fs.readFileSync(path.join(rootDir, "server", "db.ts"), "utf-8");
 if (dbTs.includes("createPool")) {
   pass("MySQL connection pooling configured");
 } else {
   warn("MySQL connection pooling not found");
+}
+
+// Docker Compose
+if (fs.existsSync(path.join(rootDir, "docker-compose.yml"))) {
+  pass("Docker Compose local file exists");
+} else {
+  warn("docker-compose.yml missing");
+}
+
+if (fs.existsSync(path.join(rootDir, "docker-compose.prod.yml"))) {
+  pass("Docker Compose production file exists");
+} else {
+  warn("docker-compose.prod.yml missing");
+}
+
+// Performance targets
+if (fs.existsSync(path.join(rootDir, "PERFORMANCE.md"))) {
+  pass("Performance targets documented");
+} else {
+  warn("PERFORMANCE.md missing");
+}
+
+if (fs.existsSync(path.join(rootDir, "scripts", "load-test.js"))) {
+  pass("Load test script exists");
+} else {
+  warn("Load test script missing");
+}
+
+// End-to-end smoke test
+if (fs.existsSync(path.join(rootDir, "scripts", "e2e-smoke.js"))) {
+  pass("E2E smoke test script exists");
+} else {
+  warn("E2E smoke test script missing");
+}
+
+if (pkgJson.scripts?.["test:e2e"]) {
+  pass("test:e2e script defined");
+} else {
+  warn("test:e2e script not defined");
+}
+
+// Release documentation
+if (fs.existsSync(path.join(rootDir, "CHANGELOG.md"))) {
+  pass("CHANGELOG.md exists");
+} else {
+  warn("CHANGELOG.md missing");
+}
+
+if (fs.existsSync(path.join(rootDir, "RELEASE.md"))) {
+  pass("RELEASE.md exists");
+} else {
+  warn("RELEASE.md missing");
+}
+
+// Contribution guidelines
+if (fs.existsSync(path.join(rootDir, "CONTRIBUTING.md"))) {
+  pass("CONTRIBUTING.md exists");
+} else {
+  warn("CONTRIBUTING.md missing");
 }
 
 // Summary

@@ -16,6 +16,12 @@ import { logger } from "./logger";
 import { requestContextMiddleware } from "./requestContext";
 import { getDb } from "../db";
 import { getRedis } from "./redis";
+import {
+  httpRequestDurationSeconds,
+  httpRequestsTotal,
+  register,
+} from "./metrics";
+import { collectHealthStatus } from "./health";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -84,20 +90,40 @@ async function startServer() {
 
   // Health check (before rate limiting so load balancers can always reach it)
   app.get("/health", async (_req, res) => {
-    const db = await getDb();
-    if (db) {
-      res.status(200).json({
-        status: "ok",
-        db: "connected",
-        timestamp: new Date().toISOString(),
-      });
-    } else {
-      res.status(503).json({
-        status: "unhealthy",
-        db: "unavailable",
-        timestamp: new Date().toISOString(),
-      });
+    const health = await collectHealthStatus();
+    const statusCode =
+      health.status === "ok" ? 200 : health.status === "degraded" ? 503 : 503;
+    res.status(statusCode).json(health);
+  });
+
+  // Prometheus metrics endpoint (before rate limiting so scrapers can reach it)
+  app.get("/metrics", async (_req, res) => {
+    try {
+      res.set("Content-Type", register.contentType);
+      res.end(await register.metrics());
+    } catch (error) {
+      logger.error({ err: error }, "[Metrics] Failed to collect metrics");
+      res.status(500).end("Failed to collect metrics");
     }
+  });
+
+  // HTTP request metrics middleware
+  app.use((req, res, next) => {
+    const start = process.hrtime.bigint();
+    const route = req.route?.path || req.path;
+
+    res.on("finish", () => {
+      const duration = Number(process.hrtime.bigint() - start) / 1e9;
+      const labels = {
+        method: req.method,
+        route,
+        status: String(res.statusCode),
+      };
+      httpRequestsTotal.inc(labels);
+      httpRequestDurationSeconds.observe(labels, duration);
+    });
+
+    next();
   });
 
   // Rate limiting — use Redis store when available, otherwise memory

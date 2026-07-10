@@ -15,6 +15,8 @@ const NVD_BASE = "https://services.nvd.nist.gov/rest/json/cves/2.0";
 const PAGE_SIZE = 2000; // NVD max per request
 const RATE_DELAY_MS = 6500; // safe for no-key tier
 
+import { withRetry } from "../_core/retry";
+
 export interface NvdCveItem {
   cveId: string;
   description: string | null;
@@ -162,7 +164,11 @@ export async function fetchNvdCvesByLastModified(
     url.searchParams.set("startIndex", startIndex.toString());
     url.searchParams.set("resultsPerPage", PAGE_SIZE.toString());
 
-    const res = await fetch(url.toString(), { headers });
+    const res = await withRetry(() => fetch(url.toString(), { headers }), {
+      maxRetries: 3,
+      baseDelayMs: 1000,
+      maxDelayMs: 10_000,
+    });
     if (!res.ok) {
       const body = await res.text();
       throw new Error(`NVD API error ${res.status}: ${body}`);
@@ -200,7 +206,11 @@ export async function fetchNvdCveById(
   const url = new URL(NVD_BASE);
   url.searchParams.set("cveId", cveId);
 
-  const res = await fetch(url.toString(), { headers });
+  const res = await withRetry(() => fetch(url.toString(), { headers }), {
+    maxRetries: 3,
+    baseDelayMs: 1000,
+    maxDelayMs: 10_000,
+  });
   if (!res.ok) return null;
 
   const data = await res.json();

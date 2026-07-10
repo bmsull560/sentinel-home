@@ -2,6 +2,7 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { ENV } from "./env";
+import { logger } from "./logger";
 import { sdk } from "./sdk";
 
 export type TrpcContext = {
@@ -46,7 +47,7 @@ async function getDevBypassUser(): Promise<User | null> {
 
     return user;
   } catch (error) {
-    console.warn("[Auth] DEV_BYPASS_AUTH provisioning failed:", error);
+    logger.warn({ err: error }, "[Auth] DEV_BYPASS_AUTH provisioning failed");
     return null;
   }
 }

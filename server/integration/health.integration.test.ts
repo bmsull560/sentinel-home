@@ -2,11 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { startTestDatabase, stopTestDatabase } from "./setup";
 import request from "supertest";
 import express from "express";
-import { getDb } from "../db";
-
-// We will test the health endpoint by creating a minimal Express app
-// that mounts the health route. In practice you could also start the
-// full server, but a focused unit is faster and more stable.
+import { collectHealthStatus } from "../_core/health";
 
 describe("Health Endpoint Integration", () => {
   let connectionString: string;
@@ -21,20 +17,26 @@ describe("Health Endpoint Integration", () => {
     await stopTestDatabase();
   }, 120_000);
 
-  it("returns 200 when database is reachable", async () => {
+  it("returns 200 with full status when database is reachable", async () => {
     const app = express();
     app.get("/health", async (_req, res) => {
-      const db = await getDb();
-      if (db) {
-        res.status(200).json({ status: "ok", db: "connected" });
-      } else {
-        res.status(503).json({ status: "unhealthy", db: "unavailable" });
-      }
+      const health = await collectHealthStatus();
+      const statusCode =
+        health.status === "ok" ? 200 : health.status === "degraded" ? 503 : 503;
+      res.status(statusCode).json(health);
     });
 
     const res = await request(app).get("/health");
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("ok");
     expect(res.body.db).toBe("connected");
+    expect(res.body.redis).toBe("not_configured");
+    expect(res.body.scheduler).toEqual(
+      expect.objectContaining({
+        started: expect.any(Boolean),
+        isRunning: expect.any(Boolean),
+        lastRunError: null,
+      })
+    );
   });
 });

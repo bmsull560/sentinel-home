@@ -1,5 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./env";
+import { logger } from "./logger";
+import { withRetry } from "./retry";
 
 export type NotificationPayload = {
   title: string;
@@ -83,20 +85,24 @@ export async function notifyOwner(
   const endpoint = buildEndpointUrl(ENV.forgeApiUrl);
 
   try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        authorization: `Bearer ${ENV.forgeApiKey}`,
-        "content-type": "application/json",
-        "connect-protocol-version": "1",
-      },
-      body: JSON.stringify({ title, content }),
-    });
+    const response = await withRetry(
+      () =>
+        fetch(endpoint, {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            authorization: `Bearer ${ENV.forgeApiKey}`,
+            "content-type": "application/json",
+            "connect-protocol-version": "1",
+          },
+          body: JSON.stringify({ title, content }),
+        }),
+      { maxRetries: 2, baseDelayMs: 500, maxDelayMs: 5_000 }
+    );
 
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
-      console.warn(
+      logger.warn(
         `[Notification] Failed to notify owner (${response.status} ${response.statusText})${
           detail ? `: ${detail}` : ""
         }`
@@ -106,7 +112,10 @@ export async function notifyOwner(
 
     return true;
   } catch (error) {
-    console.warn("[Notification] Error calling notification service:", error);
+    logger.warn(
+      { err: error },
+      "[Notification] Error calling notification service"
+    );
     return false;
   }
 }

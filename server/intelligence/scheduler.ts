@@ -17,6 +17,8 @@ import {
   runIngestionPipeline,
   type IngestionResult,
 } from "./ingestionPipeline";
+import { logger } from "../_core/logger";
+import { schedulerRunsTotal } from "../_core/metrics";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -66,7 +68,7 @@ function computeNextRunAt(): Date {
 
 async function executeIngestion(): Promise<void> {
   if (state.isRunning) {
-    console.log("[Scheduler] Skipping — previous run still in progress");
+    logger.info("[Scheduler] Skipping — previous run still in progress");
     return;
   }
 
@@ -75,7 +77,7 @@ async function executeIngestion(): Promise<void> {
   state.lastRunError = null;
   state.totalRuns++;
 
-  console.log(
+  logger.info(
     `[Scheduler] ▶ Run #${state.totalRuns} started at ${state.lastRunAt.toISOString()}`
   );
 
@@ -83,14 +85,14 @@ async function executeIngestion(): Promise<void> {
     const result = await runIngestionPipeline({
       mode: "incremental",
       onProgress: (stage: string, detail: string) => {
-        console.log(`[Scheduler]   ${stage}: ${detail}`);
+        logger.info(`[Scheduler]   ${stage}: ${detail}`);
       },
     });
 
     state.lastRunResult = result;
     state.nextRunAt = computeNextRunAt();
 
-    console.log(
+    logger.info(
       `[Scheduler] ✓ Run #${state.totalRuns} complete — ` +
         `CVEs fetched: ${result.cvesFetched}, ` +
         `inserted: ${result.cvesInserted}, ` +
@@ -100,12 +102,14 @@ async function executeIngestion(): Promise<void> {
         `alerts: ${result.alertsGenerated}, ` +
         `duration: ${(result.durationMs / 1000).toFixed(1)}s`
     );
-    console.log(`[Scheduler] ⏰ Next run at ${state.nextRunAt.toISOString()}`);
+    logger.info(`[Scheduler] ⏰ Next run at ${state.nextRunAt.toISOString()}`);
+    schedulerRunsTotal.inc({ result: "success" });
   } catch (err) {
     state.totalErrors++;
     const message = err instanceof Error ? err.message : String(err);
     state.lastRunError = message;
-    console.error(`[Scheduler] ✗ Run #${state.totalRuns} failed: ${message}`);
+    logger.error(`[Scheduler] ✗ Run #${state.totalRuns} failed: ${message}`);
+    schedulerRunsTotal.inc({ result: "failure" });
   } finally {
     state.isRunning = false;
   }
@@ -119,17 +123,17 @@ async function executeIngestion(): Promise<void> {
  */
 export function startScheduler(): void {
   if (scheduledTask) {
-    console.log("[Scheduler] Already running — ignoring duplicate start");
+    logger.info("[Scheduler] Already running — ignoring duplicate start");
     return;
   }
 
   state.startedAt = new Date();
   state.nextRunAt = computeNextRunAt();
 
-  console.log(
+  logger.info(
     `[Scheduler] Initializing — expression: "${CRON_EXPRESSION}" (every 6 hours UTC)`
   );
-  console.log(
+  logger.info(
     `[Scheduler] First automatic run at ${state.nextRunAt.toISOString()}`
   );
 
@@ -138,7 +142,7 @@ export function startScheduler(): void {
     noOverlap: true,
   });
 
-  console.log("[Scheduler] ✓ Cron task registered");
+  logger.info("[Scheduler] ✓ Cron task registered");
 }
 
 /**
@@ -148,7 +152,7 @@ export function stopScheduler(): void {
   if (!scheduledTask) return;
   scheduledTask.stop();
   scheduledTask = null;
-  console.log("[Scheduler] Stopped");
+  logger.info("[Scheduler] Stopped");
 }
 
 /**
@@ -188,11 +192,11 @@ export function _resetSchedulerStateForTests(): void {
 // ─── Graceful Shutdown ────────────────────────────────────────────────────────
 
 process.on("SIGTERM", () => {
-  console.log("[Scheduler] SIGTERM — stopping cron task");
+  logger.info("[Scheduler] SIGTERM — stopping cron task");
   stopScheduler();
 });
 
 process.on("SIGINT", () => {
-  console.log("[Scheduler] SIGINT — stopping cron task");
+  logger.info("[Scheduler] SIGINT — stopping cron task");
   stopScheduler();
 });
