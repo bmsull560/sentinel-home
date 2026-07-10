@@ -3,11 +3,12 @@ import type { Request, Response, NextFunction } from "express";
 import { nanoid } from "nanoid";
 import type { Logger } from "pino";
 import { getRequestLogger } from "./logger";
+import { getTraceContext } from "./tracing";
 
 /**
  * AsyncLocalStorage for request-scoped context.
- * Holds requestId and logger so they are available anywhere in the call stack
- * without passing them through every function signature.
+ * Holds requestId, logger, and trace context so they are available anywhere
+ * in the call stack without passing them through every function signature.
  */
 export const requestContext = new AsyncLocalStorage<{
   requestId: string;
@@ -16,7 +17,8 @@ export const requestContext = new AsyncLocalStorage<{
 
 /**
  * Express middleware that assigns a trace ID to every request and stores
- * a child logger in AsyncLocalStorage.
+ * a child logger in AsyncLocalStorage. Correlates logs with the active
+ * OpenTelemetry trace/span IDs when tracing is enabled.
  */
 export function requestContextMiddleware(
   req: Request,
@@ -34,10 +36,17 @@ export function requestContextMiddleware(
   // Set response header so clients can correlate logs
   res.setHeader("x-request-id", requestId);
 
+  const traceCtx = getTraceContext();
+
   const logger = getRequestLogger(requestId, {
     method: req.method,
     url: req.url,
     ip: req.ip ?? req.socket.remoteAddress,
+  }).child({
+    ...(traceCtx && {
+      traceId: traceCtx.traceId,
+      spanId: traceCtx.spanId,
+    }),
   });
 
   requestContext.run({ requestId, logger }, () => {

@@ -429,6 +429,100 @@ if (fs.existsSync(path.join(rootDir, "PERFORMANCE.md"))) {
   warn("PERFORMANCE.md missing");
 }
 
+// Observability artifacts
+const dashboardPath = path.join(
+  rootDir,
+  "observability",
+  "grafana",
+  "dashboards",
+  "sentinel-home.json"
+);
+const alertsPath = path.join(
+  rootDir,
+  "observability",
+  "prometheus",
+  "alerts.yml"
+);
+
+if (fs.existsSync(dashboardPath)) {
+  try {
+    JSON.parse(fs.readFileSync(dashboardPath, "utf-8"));
+    pass("Grafana dashboard JSON is valid");
+  } catch {
+    fail("Grafana dashboard JSON is invalid");
+  }
+} else {
+  fail(
+    "Grafana dashboard missing (observability/grafana/dashboards/sentinel-home.json)"
+  );
+}
+
+if (fs.existsSync(alertsPath)) {
+  pass("Prometheus alert rules file exists");
+} else {
+  fail("Prometheus alert rules missing (observability/prometheus/alerts.yml)");
+}
+
+// Infrastructure as Code
+const infraReadme = path.join(rootDir, "infrastructure", "README.md");
+const terraformModules = ["vpc", "eks", "rds", "iam"];
+const k8sOverlays = ["dev", "prod"];
+
+if (fs.existsSync(infraReadme)) {
+  pass("Infrastructure README exists");
+} else {
+  fail("Infrastructure README missing");
+}
+
+for (const mod of terraformModules) {
+  const modMain = path.join(
+    rootDir,
+    "infrastructure",
+    "terraform",
+    "modules",
+    mod,
+    "main.tf"
+  );
+  if (fs.existsSync(modMain)) {
+    pass(`Terraform module exists: ${mod}`);
+  } else {
+    fail(`Terraform module missing: ${mod}`);
+  }
+}
+
+for (const env of k8sOverlays) {
+  const overlay = path.join(
+    rootDir,
+    "infrastructure",
+    "kubernetes",
+    "overlays",
+    env,
+    "kustomization.yaml"
+  );
+  if (fs.existsSync(overlay)) {
+    pass(`Kubernetes overlay exists: ${env}`);
+  } else {
+    fail(`Kubernetes overlay missing: ${env}`);
+  }
+}
+
+// Security framework
+const securityFiles = [
+  "security/PENTEST_PLAN.md",
+  "security/FINDINGS_TEMPLATE.md",
+  "security/REMEDIATION_WORKFLOW.md",
+  "security/findings/README.md",
+  "scripts/security-checks.js",
+];
+
+for (const file of securityFiles) {
+  if (fs.existsSync(path.join(rootDir, file))) {
+    pass(`Security artifact exists: ${file}`);
+  } else {
+    fail(`Security artifact missing: ${file}`);
+  }
+}
+
 if (fs.existsSync(path.join(rootDir, "scripts", "load-test.js"))) {
   pass("Load test script exists");
 } else {
