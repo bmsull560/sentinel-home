@@ -1,7 +1,7 @@
 import AppShell, { useOrgId } from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { CreditCard, CheckCircle2, Zap } from "lucide-react";
+import { CreditCard, CircleCheckBig } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -159,7 +159,7 @@ export default function Billing() {
                 <ul className="space-y-2 mb-5">
                   {plan.features.map(f => (
                     <li key={f} className="flex items-center gap-2 text-xs">
-                      <CheckCircle2
+                      <CircleCheckBig
                         className={`w-3.5 h-3.5 shrink-0 ${plan.highlighted ? "text-white/70" : "text-black/40"}`}
                       />
                       <span
