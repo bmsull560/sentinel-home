@@ -11,6 +11,12 @@ interface State {
   error: Error | null;
 }
 
+/**
+ * Top-level React error boundary.
+ *
+ * Catches rendering errors anywhere in its child tree and displays a friendly
+ * full-screen fallback with the error stack and a reload button.
+ */
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);

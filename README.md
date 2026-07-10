@@ -46,6 +46,9 @@ Sentinel Home is a multi-tenant security dashboard for connected devices. It com
    cp .env.example .env
    ```
 
+   For environment-specific builds, create the matching file (`.env.dev`,
+   `.env.test`, or `.env.prod`) instead. All `.env*` files are ignored by git.
+
    Then fill in the required values (see [Environment Variables](#environment-variables) below).
 
 3. **Run database migrations:**
@@ -85,11 +88,21 @@ This single command checks:
 - `pnpm dev` — Start the server in development mode with Vite middleware
 - `pnpm build` — Build frontend assets and bundle the server into `dist/`
 - `pnpm start` — Run the production server from `dist/`
+- `pnpm build:dev` — Build a development package into `dist/dev/`
+- `pnpm build:test` — Build a test package into `dist/test/`
+- `pnpm build:prod` — Build a production package into `dist/prod/`
+- `pnpm start:dev` — Run the development package from `dist/dev/`
+- `pnpm start:test` — Run the test package from `dist/test/`
+- `pnpm start:prod` — Run the production package from `dist/prod/`
 - `pnpm test` — Run Vitest test suites
 - `pnpm check` — Run TypeScript type-checking
 - `pnpm format` — Run Prettier formatting
 - `pnpm verify` — Run the full verification suite (setup, build, tests, security, production)
 - `pnpm db:push` — Generate and apply Drizzle migrations
+
+Environment-specific builds use Vite modes (`dev`, `test`, `prod`) and load the
+matching `.env.*` file at runtime. The original `pnpm build` / `pnpm start`
+scripts remain available for backward compatibility.
 
 ## Environment Variables
 

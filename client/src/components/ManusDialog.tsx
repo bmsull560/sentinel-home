@@ -19,6 +19,13 @@ interface ManusDialogProps {
   onClose?: () => void;
 }
 
+/**
+ * Branded login prompt dialog for the Manus OAuth flow.
+ *
+ * Supports both controlled and uncontrolled open state. When `onOpenChange` is
+ * provided the component is fully controlled; otherwise it manages its own
+ * internal state and syncs it with the `open` prop.
+ */
 export function ManusDialog({
   title = APP_TITLE,
   logo = APP_LOGO,

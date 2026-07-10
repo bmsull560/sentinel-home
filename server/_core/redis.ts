@@ -31,11 +31,3 @@ export function getRedis(): Redis | null {
   }
   return _redis;
 }
-
-export async function closeRedis(): Promise<void> {
-  if (_redis) {
-    await _redis.quit();
-    _redis = null;
-    logger.info("[Redis] Connection closed");
-  }
-}

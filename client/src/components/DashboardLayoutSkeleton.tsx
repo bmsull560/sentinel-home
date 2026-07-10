@@ -1,5 +1,11 @@
 import { Skeleton } from "./ui/skeleton";
 
+/**
+ * Full-page dashboard skeleton loader.
+ *
+ * Mirrors the dashboard layout (sidebar + main content) so the UI keeps its
+ * structure while the real data and navigation are loading.
+ */
 export function DashboardLayoutSkeleton() {
   return (
     <div className="flex min-h-screen bg-background">

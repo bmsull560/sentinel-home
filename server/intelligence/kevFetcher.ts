@@ -77,15 +77,6 @@ export async function fetchKevCatalog(): Promise<KevCatalogResponse> {
 }
 
 /**
- * Build a fast lookup Set of KEV CVE IDs.
- * Used during NVD ingestion to enrich CVEs with KEV status.
- */
-export async function buildKevLookupSet(): Promise<Set<string>> {
-  const catalog = await fetchKevCatalog();
-  return new Set(catalog.vulnerabilities.map(v => v.cveId));
-}
-
-/**
  * Build a Map from CVE ID → full KEV entry for enrichment.
  */
 export async function buildKevLookupMap(): Promise<Map<string, KevEntry>> {

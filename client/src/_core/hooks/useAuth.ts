@@ -1,13 +1,23 @@
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { usePersistFn } from "@/hooks/usePersistFn";
 import { TRPCClientError } from "@trpc/client";
-import { useCallback, useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
   redirectPath?: string;
 };
 
+/**
+ * Authenticated session hook.
+ *
+ * Fetches the current user via tRPC `auth.me`, exposes login state, logout, and
+ * an optional redirect-to-login behavior for protected views.
+ *
+ * The logout handler uses {@link usePersistFn} so callers receive a stable
+ * callback reference without needing to memoize it themselves.
+ */
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
   const utils = trpc.useUtils();
@@ -23,7 +33,7 @@ export function useAuth(options?: UseAuthOptions) {
     },
   });
 
-  const logout = useCallback(async () => {
+  const logout = usePersistFn(async () => {
     try {
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
@@ -38,7 +48,7 @@ export function useAuth(options?: UseAuthOptions) {
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }
-  }, [logoutMutation, utils]);
+  });
 
   const state = useMemo(() => {
     localStorage.setItem(
