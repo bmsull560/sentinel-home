@@ -1,4 +1,4 @@
-import { NodeSDK, resources as sdkResources } from "@opentelemetry/sdk-node";
+import { NodeSDK, resources } from "@opentelemetry/sdk-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import {
   ATTR_SERVICE_NAME,
@@ -48,7 +48,7 @@ export function initTracing(): void {
       : undefined,
   });
 
-  const resource = sdkResources.resourceFromAttributes({
+  const resource = resources.resourceFromAttributes({
     [ATTR_SERVICE_NAME]: SERVICE_NAME,
     [ATTR_SERVICE_VERSION]: SERVICE_VERSION,
     ["deployment.environment"]: process.env.NODE_ENV || "development",
