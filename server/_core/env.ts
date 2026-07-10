@@ -39,17 +39,19 @@ const raw = parsed.success
   ? parsed.data
   : (process.env as Record<string, string>);
 
+const str = (value: string | undefined): string => value ?? "";
+
 export const ENV = {
-  appId: raw.VITE_APP_ID ?? "",
-  cookieSecret: raw.JWT_SECRET ?? "",
-  databaseUrl: raw.DATABASE_URL ?? "",
-  oAuthServerUrl: raw.OAUTH_SERVER_URL ?? "",
-  ownerOpenId: raw.OWNER_OPEN_ID ?? "",
+  appId: str(raw.VITE_APP_ID),
+  cookieSecret: str(raw.JWT_SECRET),
+  databaseUrl: str(raw.DATABASE_URL),
+  oAuthServerUrl: str(raw.OAUTH_SERVER_URL),
+  ownerOpenId: str(raw.OWNER_OPEN_ID),
   isProduction: raw.NODE_ENV === "production",
   devBypassAuth: raw.DEV_BYPASS_AUTH === "true",
-  forgeApiUrl: raw.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: raw.BUILT_IN_FORGE_API_KEY ?? "",
-  nvdApiKey: raw.NVD_API_KEY ?? "",
+  forgeApiUrl: str(raw.BUILT_IN_FORGE_API_URL),
+  forgeApiKey: str(raw.BUILT_IN_FORGE_API_KEY),
+  nvdApiKey: str(raw.NVD_API_KEY),
   redisUrl: raw.REDIS_URL,
   logLevel: raw.LOG_LEVEL,
 };
