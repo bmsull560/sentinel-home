@@ -1,0 +1,154 @@
+# Sentinel Home — Prometheus alerting rules
+#
+# Load these rules into Prometheus or a compatible ruler (Cortex, Thanos, Mimir).
+# Each alert includes severity, owner, and a link to the relevant runbook.
+
+groups:
+  - name: sentinel-home-api
+    interval: 30s
+    rules:
+      - alert: SentinelHomeHighErrorRate
+        expr: |
+          (
+            sum by (job) (rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            sum by (job) (rate(http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          owner: sre
+        annotations:
+          summary: "Sentinel Home error rate is high"
+          description: "The 5xx error rate for {{ $labels.job }} is {{ $value | humanizePercentage }} over the last 5 minutes."
+          runbook_url: "https://github.com/sentinel-home/sentinel-home/blob/main/RUNBOOKS.md#high-error-rate"
+          dashboard_url: "https://grafana.example.com/d/sentinel-home-overview"
+
+      - alert: SentinelHomeHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le, job) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          owner: backend
+        annotations:
+          summary: "Sentinel Home P95 latency is elevated"
+          description: "The P95 HTTP latency for {{ $labels.job }} is {{ $value }} seconds over the last 5 minutes."
+          runbook_url: "https://github.com/sentinel-home/sentinel-home/blob/main/RUNBOOKS.md#high-latency"
+          dashboard_url: "https://grafana.example.com/d/sentinel-home-overview"
+
+      - alert: SentinelHomeInstanceDown
+        expr: up{job=~"sentinel-home.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          owner: sre
+        annotations:
+          summary: "Sentinel Home instance is down"
+          description: "Instance {{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+          runbook_url: "https://github.com/sentinel-home/sentinel-home/blob/main/RUNBOOKS.md#instance-down"
+          dashboard_url: "https://grafana.example.com/d/sentinel-home-overview"
+
+  - name: sentinel-home-workers
+    interval: 30s
+    rules:
+      - alert: SentinelHomeSchedulerFailures
+        expr: |
+          sum by (job) (increase(scheduler_runs_total{result="error"}[15m])) > 0
+        for: 0m
+        labels:
+          severity: warning
+          team: platform
+          owner: backend
+        annotations:
+          summary: "Sentinel Home ingestion scheduler is failing"
+          description: "The ingestion scheduler reported {{ $value }} failed run(s) in the last 15 minutes."
+          runbook_url: "https://github.com/sentinel-home/sentinel-home/blob/main/RUNBOOKS.md#scheduler-failures"
+          dashboard_url: "https://grafana.example.com/d/sentinel-home-overview"
+
+      - alert: SentinelHomePipelineFailures
+        expr: |
+          sum by (job) (increase(ingestion_pipeline_runs_total{result="error"}[15m])) > 0
+        for: 0m
+        labels:
+          severity: warning
+          team: platform
+          owner: backend
+        annotations:
+          summary: "Sentinel Home ingestion pipeline runs are failing"
+          description: "API-triggered ingestion pipeline runs reported {{ $value }} failure(s) in the last 15 minutes."
+          runbook_url: "https://github.com/sentinel-home/sentinel-home/blob/main/RUNBOOKS.md#pipeline-failures"
+          dashboard_url: "https://grafana.example.com/d/sentinel-home-overview"
+
+  - name: sentinel-home-resources
+    interval: 30s
+    rules:
+      - alert: SentinelHomeHighMemoryUsage
+        expr: |
+          (
+            process_resident_memory_bytes{job=~"sentinel-home.*"}
+            /
+            process_virtual_memory_max_bytes{job=~"sentinel-home.*"}
+          ) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          owner: sre
+        annotations:
+          summary: "Sentinel Home memory usage is high"
+          description: "Memory usage for {{ $labels.instance }} is {{ $value | humanizePercentage }} of the process limit."
+          runbook_url: "https://github.com/sentinel-home/sentinel-home/blob/main/RUNBOOKS.md#high-memory-usage"
+          dashboard_url: "https://grafana.example.com/d/sentinel-home-overview"
+
+      - alert: SentinelHomeEventLoopLag
+        expr: |
+          nodejs_eventloop_lag_seconds{job=~"sentinel-home.*"} > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          owner: backend
+        annotations:
+          summary: "Sentinel Home event loop lag is high"
+          description: "Event loop lag for {{ $labels.instance }} is {{ $value }} seconds for more than 2 minutes."
+          runbook_url: "https://github.com/sentinel-home/sentinel-home/blob/main/RUNBOOKS.md#event-loop-lag"
+          dashboard_url: "https://grafana.example.com/d/sentinel-home-overview"
+
+  - name: sentinel-home-database
+    interval: 30s
+    rules:
+      - alert: SentinelHomeDatabaseConnectionsHigh
+        expr: |
+          mysql_global_status_threads_connected{job=~"mysql.*"}
+          /
+          mysql_global_variables_max_connections{job=~"mysql.*"} > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          owner: dba
+        annotations:
+          summary: "MySQL connection usage is high"
+          description: "MySQL instance {{ $labels.instance }} is using {{ $value | humanizePercentage }} of max connections."
+          runbook_url: "https://github.com/sentinel-home/sentinel-home/blob/main/RUNBOOKS.md#database-connections-high"
+          dashboard_url: "https://grafana.example.com/d/sentinel-home-overview"
+
+      - alert: SentinelHomeDatabaseSlowQueries
+        expr: |
+          rate(mysql_global_status_slow_queries{job=~"mysql.*"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          owner: dba
+        annotations:
+          summary: "MySQL slow query rate is elevated"
+          description: "MySQL instance {{ $labels.instance }} is reporting {{ $value }} slow queries per second."
+          runbook_url: "https://github.com/sentinel-home/sentinel-home/blob/main/RUNBOOKS.md#database-slow-queries"
+          dashboard_url: "https://grafana.example.com/d/sentinel-home-overview"

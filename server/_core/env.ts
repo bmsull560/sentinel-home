@@ -16,6 +16,11 @@ const envSchema = z.object({
   BUILT_IN_FORGE_API_KEY: z.string().optional(),
   NVD_API_KEY: z.string().optional(),
   REDIS_URL: z.string().optional(),
+  OTEL_SERVICE_NAME: z.string().optional(),
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional().or(z.literal("")),
+  OTEL_SDK_DISABLED: z.enum(["true", "false"]).default("false"),
+  OTEL_TRACES_SAMPLER: z.string().optional(),
+  OTEL_TRACES_SAMPLER_ARG: z.string().optional(),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .optional(),
@@ -53,5 +58,10 @@ export const ENV = {
   forgeApiKey: str(raw.BUILT_IN_FORGE_API_KEY),
   nvdApiKey: str(raw.NVD_API_KEY),
   redisUrl: raw.REDIS_URL,
+  otelServiceName: str(raw.OTEL_SERVICE_NAME),
+  otelExporterEndpoint: str(raw.OTEL_EXPORTER_OTLP_ENDPOINT),
+  otelSdkDisabled: raw.OTEL_SDK_DISABLED,
+  otelTracesSampler: str(raw.OTEL_TRACES_SAMPLER),
+  otelTracesSamplerArg: str(raw.OTEL_TRACES_SAMPLER_ARG),
   logLevel: raw.LOG_LEVEL,
 };

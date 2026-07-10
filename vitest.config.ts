@@ -17,4 +17,12 @@ export default defineConfig({
     include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
     exclude: ["server/**/*.integration.test.ts", "node_modules"],
   },
+  optimizeDeps: {
+    include: [
+      "@opentelemetry/api",
+      "@opentelemetry/sdk-trace-base",
+      "@opentelemetry/context-async-hooks",
+    ],
+    force: true,
+  },
 });

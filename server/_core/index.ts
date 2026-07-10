@@ -1,4 +1,7 @@
 import "dotenv/config";
+import { initTracing } from "./tracing";
+initTracing();
+
 import express from "express";
 import { createServer } from "http";
 import net from "net";
