@@ -1,7 +1,7 @@
 import AppShell, { useOrgId } from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { CreditCard, CircleCheckBig, Zap } from "lucide-react";
+import { CreditCard, CircleCheckBig } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
