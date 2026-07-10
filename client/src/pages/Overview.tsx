@@ -9,8 +9,8 @@ import {
   Activity,
   TrendingUp,
   ArrowRight,
-  CheckCircle2,
-  AlertTriangle,
+  CircleCheckBig,
+  TriangleAlert,
   Clock,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -197,7 +197,7 @@ export default function Overview() {
             </div>
             {!vulns?.length ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <CheckCircle2 className="w-10 h-10 text-black/15 mb-3" />
+                <CircleCheckBig className="w-10 h-10 text-black/15 mb-3" />
                 <div className="text-sm font-medium text-black/40">
                   No vulnerabilities detected
                 </div>
@@ -334,7 +334,7 @@ export default function Overview() {
                   className="flex items-center gap-4 p-3 rounded-xl hover:bg-black/3 transition-colors"
                 >
                   {alert.severity === "critical" ? (
-                    <AlertTriangle className="w-4 h-4 text-black shrink-0" />
+                    <TriangleAlert className="w-4 h-4 text-black shrink-0" />
                   ) : (
                     <Clock className="w-4 h-4 text-black/40 shrink-0" />
                   )}

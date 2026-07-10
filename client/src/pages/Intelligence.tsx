@@ -13,9 +13,9 @@ import {
   Database,
   Clock,
   CheckCircle,
-  XCircle,
+  CircleX,
   Loader2,
-  AlertTriangle,
+  TriangleAlert,
   TrendingUp,
   Info,
 } from "lucide-react";
@@ -40,7 +40,7 @@ function statusIcon(status: string) {
     case "completed":
       return <CheckCircle className="w-4 h-4 text-black" />;
     case "failed":
-      return <XCircle className="w-4 h-4 text-black/40" />;
+      return <CircleX className="w-4 h-4 text-black/40" />;
     case "running":
       return <Loader2 className="w-4 h-4 animate-spin text-black/60" />;
     default:
@@ -565,7 +565,7 @@ export default function Intelligence() {
 
             {activeSearch && !searchLoading && searchResults?.length === 0 && (
               <div className="text-center py-8">
-                <AlertTriangle className="w-8 h-8 text-black/10 mx-auto mb-2" />
+                <TriangleAlert className="w-8 h-8 text-black/10 mx-auto mb-2" />
                 <p className="text-sm text-black/30">
                   No CVEs found for "{activeSearch}"
                 </p>

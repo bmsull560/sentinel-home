@@ -13,10 +13,10 @@ import {
   Router,
   Car,
   Baby,
-  HelpCircle,
+  CircleHelp,
   Trash2,
   X,
-  CheckCircle2,
+  CircleCheckBig,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,7 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   automotive: Car,
   health: Heart,
   child_pet: Baby,
-  other: HelpCircle,
+  other: CircleHelp,
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -307,7 +307,7 @@ export default function Devices() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {devices.map(device => {
-              const Icon = CATEGORY_ICONS[device.category] ?? HelpCircle;
+              const Icon = CATEGORY_ICONS[device.category] ?? CircleHelp;
               const statusCfg =
                 STATUS_CONFIG[device.status] ?? STATUS_CONFIG.unknown;
               return (
@@ -392,7 +392,7 @@ export default function Devices() {
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: "oklab(0.7 0.0260473 -0.147721 / 0.12)" }}
             >
-              <CheckCircle2 className="w-4 h-4 text-black/60" />
+              <CircleCheckBig className="w-4 h-4 text-black/60" />
             </div>
             <div>
               <h4 className="font-semibold text-sm mb-1">

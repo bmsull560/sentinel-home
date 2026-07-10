@@ -7,7 +7,7 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
-  CheckCircle2,
+  CircleCheckBig,
   Search,
   Filter,
 } from "lucide-react";
@@ -182,7 +182,7 @@ export default function Vulnerabilities() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <CheckCircle2 className="w-12 h-12 text-black/15 mb-4" />
+            <CircleCheckBig className="w-12 h-12 text-black/15 mb-4" />
             <h3 className="font-semibold text-base mb-2">
               No vulnerabilities found
             </h3>
@@ -373,7 +373,7 @@ export default function Vulnerabilities() {
                         )}
                         {v.status === "resolved" && (
                           <span className="text-xs font-medium text-black/40 flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Resolved
+                            <CircleCheckBig className="w-3.5 h-3.5" /> Resolved
                           </span>
                         )}
                       </div>

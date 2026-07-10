@@ -6,8 +6,8 @@ import {
   Bot,
   Send,
   Zap,
-  CheckCircle2,
-  AlertCircle,
+  CircleCheckBig,
+  CircleAlert,
   Clock,
   ChevronDown,
   ChevronUp,
@@ -223,9 +223,9 @@ export default function AgentConsole() {
                         }
                       >
                         {run.status === "completed" ? (
-                          <CheckCircle2 className="w-4 h-4 text-black/70" />
+                          <CircleCheckBig className="w-4 h-4 text-black/70" />
                         ) : run.status === "failed" ? (
-                          <AlertCircle className="w-4 h-4 text-white" />
+                          <CircleAlert className="w-4 h-4 text-white" />
                         ) : (
                           <Clock className="w-4 h-4 text-black/50 animate-spin" />
                         )}

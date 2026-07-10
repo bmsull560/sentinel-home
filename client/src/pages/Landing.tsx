@@ -8,7 +8,7 @@ import {
   Bot,
   Users,
   ArrowRight,
-  CheckCircle2,
+  CircleCheckBig,
   Lock,
   Zap,
   Globe,
@@ -346,7 +346,7 @@ export default function Landing() {
                 },
               ].map(({ name, role, desc }) => (
                 <div key={name} className="flex items-start gap-3">
-                  <CheckCircle2
+                  <CircleCheckBig
                     className="w-4 h-4 mt-0.5 shrink-0"
                     style={{ color: "oklch(0.55 0.12 250)" }}
                   />
@@ -453,7 +453,7 @@ export default function Landing() {
               <ul className="space-y-2 mb-6">
                 {features.map(f => (
                   <li key={f} className="flex items-center gap-2 text-sm">
-                    <CheckCircle2
+                    <CircleCheckBig
                       className={`w-3.5 h-3.5 shrink-0 ${highlight ? "text-white/70" : "text-black/40"}`}
                     />
                     <span
