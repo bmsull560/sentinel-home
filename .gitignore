@@ -114,3 +114,7 @@ temp/
 
 # Local runtime
 .manus/
+
+# repowise local index/cache (not a source of truth — see https://github.com/repowise-dev/repowise/blob/main/docs/CONFIG.md)
+.repowise/
+.claude/

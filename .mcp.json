@@ -1,16 +1,9 @@
 {
   "mcpServers": {
     "repowise": {
-      "url": "https://api.repowise.dev/mcp/owner/repo",
-      "bearerTokenEnvVar": "REPOWISE_API_TOKEN",
       "command": "repowise",
-      "args": [
-        "mcp",
-        "/home/runner/work/sentinel-home/sentinel-home",
-        "--transport",
-        "stdio"
-      ],
-      "description": "repowise: codebase intelligence \u2014 docs, graph, git signals, dead code, decisions"
+      "args": ["mcp", "--transport", "stdio"],
+      "description": "repowise: codebase intelligence — docs, dependency graph, git signals, code health, dead code, decisions"
     }
   }
 }
