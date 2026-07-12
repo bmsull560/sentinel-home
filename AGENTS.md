@@ -322,3 +322,13 @@ await trpc.intelligence.triggerIngestion.useMutation({
   daysBack: 7,
 });
 ```
+
+## Codebase Intelligence (repowise)
+
+This repo is configured with [repowise](https://github.com/repowise-dev/repowise), an MCP server that gives AI agents a dependency graph, git history, code-health scores, and dead-code findings instead of raw greps.
+
+- **MCP config:** `.mcp.json` registers the `repowise` server (`repowise mcp --transport stdio`), served from the repo root.
+- **Index:** built locally with `pip install repowise && repowise init --index-only -y` (no LLM key needed, ~10s). The Copilot cloud agent environment pre-builds it via `.github/workflows/copilot-setup-steps.yml`.
+- **Local cache:** the `.repowise/` directory is a local cache, is gitignored, and must never be committed.
+- **Keeping it fresh:** run `repowise update` after pulling or committing changes.
+- **Useful MCP tools:** `get_overview` (architecture summary), `get_context` (per-file/symbol triage), `get_risk` (hotspots + PR blast radius), `get_dead_code`, `get_health`.
