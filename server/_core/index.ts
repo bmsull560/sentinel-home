@@ -131,12 +131,13 @@ async function startServer() {
 
   // Rate limiting — use Redis store when available, otherwise memory
   const redisClient = getRedis();
-  let limiterStore: any = undefined;
+  let createRedisStore: (() => any) | undefined = undefined;
   if (redisClient) {
     const { RedisStore } = await import("rate-limit-redis");
-    limiterStore = new RedisStore({
-      sendCommand: (...args: string[]) => (redisClient as any).call(...args),
-    });
+    createRedisStore = () =>
+      new RedisStore({
+        sendCommand: (...args: string[]) => (redisClient as any).call(...args),
+      });
     logger.info("[RateLimit] Using Redis store");
   } else {
     logger.info(
@@ -149,7 +150,7 @@ async function startServer() {
     max: 200, // limit each IP to 200 requests per windowMs
     standardHeaders: true,
     legacyHeaders: false,
-    store: limiterStore,
+    store: createRedisStore ? createRedisStore() : undefined,
     skip: req =>
       req.path === "/api/trpc/system.health" || req.path === "/health",
   });
@@ -161,7 +162,7 @@ async function startServer() {
     max: 20,
     standardHeaders: true,
     legacyHeaders: false,
-    store: limiterStore,
+    store: createRedisStore ? createRedisStore() : undefined,
   });
   app.use("/api/oauth", authLimiter);
 

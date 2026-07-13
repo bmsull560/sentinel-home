@@ -4,7 +4,7 @@ FROM node:26-slim AS builder
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
+RUN npm install -g pnpm@10.4.1
 
 # Copy dependency manifests
 COPY package.json pnpm-lock.yaml ./
