@@ -37,7 +37,7 @@
     "@opentelemetry/instrumentation-express": "^0.68.0",
     "@opentelemetry/instrumentation-http": "^0.220.0",
     "@opentelemetry/instrumentation-mysql2": "^0.66.0",
-    "@opentelemetry/resources": "^1.30.0",
+    "@opentelemetry/resources": "^2.9.0",
     "@opentelemetry/sdk-node": "^0.220.0",
     "@opentelemetry/sdk-trace-base": "^1.30.0",
     "@opentelemetry/semantic-conventions": "^1.30.0",
