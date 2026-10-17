@@ -232,6 +232,8 @@ In production, static client assets are served by the backend.
 
 ## Docker
 
+For a detailed local quick-start guide, see [`docs/docker-local.md`](docs/docker-local.md).
+
 Build and run locally:
 
 ```bash
