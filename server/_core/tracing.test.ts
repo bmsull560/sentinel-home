@@ -5,14 +5,17 @@ import {
   SimpleSpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
 import { AsyncLocalStorageContextManager } from "@opentelemetry/context-async-hooks";
-import { context } from "@opentelemetry/api";
+import { context, trace } from "@opentelemetry/api";
 import { withSpan, getTraceContext, shutdownTracing } from "./tracing";
 
 const provider = new BasicTracerProvider();
 const memoryExporter = new InMemorySpanExporter();
+const activeProcessor = provider._activeSpanProcessor as {
+  _spanProcessors?: Array<unknown>;
+};
 
-provider.addSpanProcessor(new SimpleSpanProcessor(memoryExporter));
-provider.register();
+activeProcessor._spanProcessors?.push(new SimpleSpanProcessor(memoryExporter));
+trace.setGlobalTracerProvider(provider);
 
 const contextManager = new AsyncLocalStorageContextManager();
 context.setGlobalContextManager(contextManager);
@@ -50,7 +53,8 @@ describe("tracing", () => {
     const child = spans.find(s => s.name === "child")!;
 
     expect(parent.traceId).toBe(child.traceId);
-    expect(child.parentSpanId).toBe(parent.spanContext().spanId);
+    const parentSpanId = child.parentSpanContext?.spanId ?? child.parentSpanId;
+    expect(parentSpanId).toBe(parent.spanContext().spanId);
   });
 
   it("records errors without throwing away the original exception", async () => {
